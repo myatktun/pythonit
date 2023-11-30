@@ -1,8 +1,12 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 HOME = os.environ['HOME']
+LOCAL_DIR = os.environ['LOCAL_DIR']
 
-f = open(f"{os.environ['HOME']}/Documents/Vimwiki/index.md", "r+")
+f = open(f"{HOME}/{LOCAL_DIR}/index.md", "r+")
 
 print("Reading file contents")
 text = f.read()
