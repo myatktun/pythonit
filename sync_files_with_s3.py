@@ -1,7 +1,30 @@
-import subprocess
 import os
 import argparse
+from subprocess import Popen, PIPE, run as subprocess_run
 from dotenv import load_dotenv
+
+
+def main():
+    load_dotenv()
+
+    args = create_argument_parser()
+    dry_run = check_dry_run(args)
+
+    LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
+    S3_BUCKET = os.environ['S3_BUCKET']
+
+    source, destination = get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
+
+    exclude_pattern = "*.md"
+    include_pattern = "*/*.md"
+
+    command = ["aws", "s3", "sync", source, destination, "--exclude",
+               exclude_pattern, "--include", include_pattern, "--size-only"]
+
+    if dry_run:
+        command.append("--dryrun")
+
+    subprocess_run(command)
 
 
 def create_argument_parser():
@@ -34,55 +57,6 @@ def check_dry_run(args):
     return args.dryrun
 
 
-def get_local_time(local_dir):
-    p1 = subprocess.Popen(
-        ["find", f"{local_dir}", "-type", "f", "-exec", "stat", "-c", "%y", "{}", "+"], stdout=subprocess.PIPE)
-
-    p2 = subprocess.Popen(["sort", "-r"], stdin=p1.stdout,
-                          stdout=subprocess.PIPE)
-    p1.stdout.close()
-
-    p3 = subprocess.Popen(["head", "-n", "1"],
-                          stdin=p2.stdout, stdout=subprocess.PIPE)
-    p2.stdout.close()
-
-    p4 = subprocess.Popen(
-        ["awk", '{print $1 " " $2}'], stdin=p3.stdout, stdout=subprocess.PIPE)
-    p3.stdout.close()
-
-    local_time = p4.communicate()[0].decode("utf-8")
-
-    return local_time
-
-
-def get_s3_time(s3_bucket):
-    p1 = subprocess.Popen(
-        ["aws", "s3", "ls", f"{s3_bucket}", "--recursive"], stdout=subprocess.PIPE)
-
-    p2 = subprocess.Popen(["sort", "-r"], stdin=p1.stdout,
-                          stdout=subprocess.PIPE)
-    p1.stdout.close()
-
-    p3 = subprocess.Popen(["head", "-n", "1"],
-                          stdin=p2.stdout, stdout=subprocess.PIPE)
-    p2.stdout.close()
-
-    p4 = subprocess.Popen(
-        ["awk", '{print $1 " " $2}'], stdin=p3.stdout, stdout=subprocess.PIPE)
-    p3.stdout.close()
-
-    s3_time = p4.communicate()[0].decode("utf-8")
-
-    return s3_time
-
-
-def get_last_modified_times(local_dir, s3_bucket):
-    local_time = get_local_time(local_dir)
-    s3_time = get_s3_time(s3_bucket)
-
-    return (local_time, s3_time)
-
-
 def get_sync_dirs(local_dir, s3_bucket, args):
     if args.download:
         print("Syncing files from s3 bucket to local")
@@ -101,27 +75,36 @@ def get_sync_dirs(local_dir, s3_bucket, args):
     return (local_dir, s3_bucket)
 
 
-def main():
-    load_dotenv()
+def get_last_modified_times(local_dir, s3_bucket):
+    command1 = ["find", f"{local_dir}", "-type",
+                "f", "-exec", "stat", "-c", "%y", "{}", "+"]
 
-    args = create_argument_parser()
-    dry_run = check_dry_run(args)
+    command2 = ["aws", "s3", "ls", f"{s3_bucket}", "--recursive"]
 
-    LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
-    S3_BUCKET = os.environ['S3_BUCKET']
+    local_time = get_time(command1)
+    s3_time = get_time(command2)
 
-    source, destination = get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
+    return (local_time, s3_time)
 
-    exclude_pattern = "*.md"
-    include_pattern = "*/*.md"
 
-    command = ["aws", "s3", "sync", source, destination, "--exclude",
-               exclude_pattern, "--include", include_pattern, "--size-only"]
+def get_time(command):
+    time_list = Popen(command, stdout=PIPE)
 
-    if dry_run:
-        command.append("--dryrun")
+    sorted_time_list = Popen(
+        ["sort", "-r"], stdin=time_list.stdout, stdout=PIPE)
+    time_list.stdout.close()
 
-    subprocess.run(command)
+    top_row = Popen(["head", "-n", "1"],
+                    stdin=sorted_time_list.stdout, stdout=PIPE)
+    sorted_time_list.stdout.close()
+
+    first_column = Popen(
+        ["awk", '{print $1 " " $2}'], stdin=top_row.stdout, stdout=PIPE)
+    top_row.stdout.close()
+
+    latest_time = first_column.communicate()[0].decode("utf-8")
+
+    return latest_time
 
 
 if __name__ == "__main__":
