@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
-        "Sync note files between local directory and s3 bucket")
+        "Sync files between local directory and s3 bucket")
 
     parser.add_argument(
         "--dryrun",
@@ -34,15 +34,51 @@ def check_dry_run(args):
     return args.dryrun
 
 
+def get_local_time(local_dir):
+    p1 = subprocess.Popen(
+        ["find", f"{local_dir}", "-type", "f", "-exec", "stat", "-c", "%y", "{}", "+"], stdout=subprocess.PIPE)
+
+    p2 = subprocess.Popen(["sort", "-r"], stdin=p1.stdout,
+                          stdout=subprocess.PIPE)
+    p1.stdout.close()
+
+    p3 = subprocess.Popen(["head", "-n", "1"],
+                          stdin=p2.stdout, stdout=subprocess.PIPE)
+    p2.stdout.close()
+
+    p4 = subprocess.Popen(
+        ["awk", '{print $1 " " $2}'], stdin=p3.stdout, stdout=subprocess.PIPE)
+    p3.stdout.close()
+
+    local_time = p4.communicate()[0].decode("utf-8")
+
+    return local_time
+
+
+def get_s3_time(s3_bucket):
+    p1 = subprocess.Popen(
+        ["aws", "s3", "ls", f"{s3_bucket}", "--recursive"], stdout=subprocess.PIPE)
+
+    p2 = subprocess.Popen(["sort", "-r"], stdin=p1.stdout,
+                          stdout=subprocess.PIPE)
+    p1.stdout.close()
+
+    p3 = subprocess.Popen(["head", "-n", "1"],
+                          stdin=p2.stdout, stdout=subprocess.PIPE)
+    p2.stdout.close()
+
+    p4 = subprocess.Popen(
+        ["awk", '{print $1 " " $2}'], stdin=p3.stdout, stdout=subprocess.PIPE)
+    p3.stdout.close()
+
+    s3_time = p4.communicate()[0].decode("utf-8")
+
+    return s3_time
+
+
 def get_last_modified_times(local_dir, s3_bucket):
-    command_1 = f"find {local_dir} -type f -exec stat -c \"%y %n\" {{}} + | sort -r | head -n 1 | awk '{{print $1 \" \" $2}}'"
-    command_2 = f"aws s3 ls {s3_bucket} --recursive | sort | tail -n 1 | awk '{{print $1 \" \" $2}}'"
-
-    local_time = subprocess.run(
-        command_1, stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8")
-
-    s3_time = subprocess.run(command_2, stdout=subprocess.PIPE,
-                             shell=True).stdout.decode("utf-8")
+    local_time = get_local_time(local_dir)
+    s3_time = get_s3_time(s3_bucket)
 
     return (local_time, s3_time)
 
