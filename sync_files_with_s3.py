@@ -67,6 +67,10 @@ def get_sync_dirs(local_dir, s3_bucket, args):
 
     local_time, s3_time = get_last_modified_times(local_dir, s3_bucket)
 
+    if local_time == s3_time:
+        print("All files are in sync")
+        exit(0)
+
     if local_time < s3_time:
         print("Syncing files from s3 bucket to local")
         return (s3_bucket, local_dir)
@@ -76,7 +80,7 @@ def get_sync_dirs(local_dir, s3_bucket, args):
 
 
 def get_last_modified_times(local_dir, s3_bucket):
-    command1 = ["find", f"{local_dir}", "-type",
+    command1 = ["find", f"{local_dir}", "-mindepth", "2", "-type",
                 "f", "-exec", "stat", "-c", "%y", "{}", "+"]
 
     command2 = ["aws", "s3", "ls", f"{s3_bucket}", "--recursive"]
@@ -84,7 +88,7 @@ def get_last_modified_times(local_dir, s3_bucket):
     local_time = get_time(command1)
     s3_time = get_time(command2)
 
-    return (local_time, s3_time)
+    return (local_time.split(".")[0], s3_time)
 
 
 def get_time(command):
@@ -104,7 +108,7 @@ def get_time(command):
 
     latest_time = first_column.communicate()[0].decode("utf-8")
 
-    return latest_time
+    return latest_time.strip()
 
 
 if __name__ == "__main__":
