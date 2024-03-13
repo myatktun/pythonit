@@ -13,3 +13,7 @@ pyenv local <venv_version> <global_version>
 
 Need to specify <venv_version> first, otherwise pyenv will default to global_version and
 require to activate virtual environment manually.
+
+## Environment Variables
+
+Set the environment variables for MONGO_URI, DB_NAME, LOCAL_DIR and S3_BUCKET
