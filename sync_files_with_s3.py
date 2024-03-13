@@ -1,13 +1,12 @@
 import os
-import argparse
+import sys
 from subprocess import Popen, PIPE, run as subprocess_run
 from dotenv import load_dotenv
 
 
-def main():
+def main(args):
     load_dotenv()
 
-    args = create_argument_parser()
     dry_run = check_dry_run(args)
 
     LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
@@ -24,30 +23,14 @@ def main():
     if dry_run:
         command.append("--dryrun")
 
-    subprocess_run(command)
+    output = subprocess_run(command, stdout=PIPE).stdout.decode()
 
+    if len(output) == 0:
+        sys.exit("No files to sync")
 
-def create_argument_parser():
-    parser = argparse.ArgumentParser(
-        "Sync files between local directory and s3 bucket")
+    print(output)
 
-    parser.add_argument(
-        "--dryrun",
-        help="sync files or only dryrun (default: dryrun)",
-        action=argparse.BooleanOptionalAction)
-
-    group = parser.add_mutually_exclusive_group()
-
-    group.add_argument(
-        "--download",
-        help="sync files from s3 bucket to local",
-        action="store_true")
-    group.add_argument(
-        "--upload",
-        help="sync files from local to s3 bucket",
-        action="store_true")
-
-    return parser.parse_args()
+    return output
 
 
 def check_dry_run(args):
@@ -93,14 +76,17 @@ def get_last_modified_times(local_dir, s3_bucket):
 
 def get_time(command):
     time_list = Popen(command, stdout=PIPE)
+    assert time_list.stdout is not None
 
     sorted_time_list = Popen(
         ["sort", "-r"], stdin=time_list.stdout, stdout=PIPE)
     time_list.stdout.close()
+    assert sorted_time_list.stdout is not None
 
     top_row = Popen(["head", "-n", "1"],
                     stdin=sorted_time_list.stdout, stdout=PIPE)
     sorted_time_list.stdout.close()
+    assert top_row.stdout is not None
 
     first_column = Popen(
         ["awk", '{print $1 " " $2}'], stdin=top_row.stdout, stdout=PIPE)
@@ -109,7 +95,3 @@ def get_time(command):
     latest_time = first_column.communicate()[0].decode("utf-8")
 
     return latest_time.strip()
-
-
-if __name__ == "__main__":
-    main()
