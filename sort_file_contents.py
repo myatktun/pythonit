@@ -13,9 +13,8 @@ def main():
 def write_to_file(file_location):
     sorted_contents = get_sorted_contents(file_location)
     print("Writing sorted file contents")
-    f = open(f"{file_location}/index.md", "w")
-    f.write(sorted_contents)
-    f.close()
+    with open(f"{file_location}/index.md", "w") as f:
+        f.write(sorted_contents)
 
 
 def get_sorted_contents(file_location):
