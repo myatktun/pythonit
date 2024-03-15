@@ -16,6 +16,4 @@ def sync_files(source: str, destination: str, *,
     if len(output) == 0:
         sys.exit("No files to sync")
 
-    print(output)
-
     return output
