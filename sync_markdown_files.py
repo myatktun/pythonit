@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 from sync_files_with_s3 import sync_files
 
 
-def sync_md_files(args, *, dryrun=True) -> list[str]:
+def sync_markdown(args, *, dryrun=True) -> list[str]:
     load_dotenv()
 
     LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
