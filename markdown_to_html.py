@@ -4,45 +4,49 @@ import re
 import sys
 from dotenv import load_dotenv
 from pandoc.types import *
-from subprocess import run as subprocess_run
 from sync_files_with_s3 import sync_files
 
 
-def main(files_to_convert, upload, args):
+def main(md_files: list[str], *, dryrun=True):
     load_dotenv()
 
-    dry_run = check_dry_run(args)
+    upload = check_upload(md_files[0])
+
+    files_to_convert: list[str] = [
+        "/".join(f.rsplit('/', 2)[-2:]) for f in md_files]
 
     LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
     INDEX_FILE = f"{LOCAL_DIR}/index.md"
 
-    for i in range(len(files_to_convert)):
-        files_to_convert[i] = "/".join([LOCAL_DIR, files_to_convert[i]])
+    files_to_convert = ["/".join([LOCAL_DIR, f]) for f in files_to_convert]
 
     generate_index(INDEX_FILE)
     generate_html(files_to_convert)
 
-    source = os.environ['PWD'] + "html"
-    destination = "s3://notes-html1"
+    (source, destination) = get_sync_dirs(upload)
+
+    output = sync_files(source, destination, dryrun=dryrun)
+
+    print(output)
+
+
+def get_sync_dirs(upload: bool) -> tuple[str, str]:
+    LOCAL_HTML_DIR = os.environ['PWD'] + "html"
+    S3_BUCKET = os.environ['S3_HTML_BUCKET']
 
     if upload:
         print("Syncing html files from local to s3 bucket")
+        return (LOCAL_HTML_DIR, S3_BUCKET)
 
-    if not upload:
-        print("Syncing html files from s3 bucket to local")
-        source, destination = destination, source
-
-    sync_files(source, destination, dryrun=dry_run)
+    print("Syncing html files from s3 bucket to local")
+    return (S3_BUCKET, LOCAL_HTML_DIR)
 
 
-def check_dry_run(args):
-    if args.dryrun is None:
-        return True
-
-    return args.dryrun
+def check_upload(f: str) -> bool:
+    return f.split(':', 1)[0].split(' ')[-1].lower() == "upload"
 
 
-def generate_index(index_file):
+def generate_index(index_file: str):
     with open(index_file, "r", encoding="utf-8") as input_file:
         html_file = f"{re.split('[/ .]', index_file)[-2]}.html"
         text = input_file.read()
@@ -59,7 +63,7 @@ def generate_index(index_file):
                      options=["--template=html/template.html"])
 
 
-def generate_html(markdown_dir):
+def generate_html(markdown_dir: list[str]):
     for file in markdown_dir:
         with open(file, "r", encoding="utf-8") as input_file:
             [category, html_file] = re.split('[/ .]', file)[-3:-1]
