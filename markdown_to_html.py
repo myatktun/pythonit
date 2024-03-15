@@ -5,6 +5,7 @@ import sys
 from dotenv import load_dotenv
 from pandoc.types import *
 from subprocess import run as subprocess_run
+from sync_files_with_s3 import sync_files
 
 
 def main(files_to_convert, upload, args):
@@ -31,12 +32,7 @@ def main(files_to_convert, upload, args):
         print("Syncing html files from s3 bucket to local")
         source, destination = destination, source
 
-    command = ["aws", "s3", "sync", source, destination, "--size-only"]
-
-    if dry_run:
-        command.append("--dryrun")
-
-    subprocess_run(command)
+    sync_files(source, destination, dryrun=dry_run)
 
 
 def check_dry_run(args):
