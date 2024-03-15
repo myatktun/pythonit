@@ -1,13 +1,13 @@
 import argparse
-from markdown_to_html import main as convert_files
-from sync_markdown_files import sync_md_files
+from sync_html_files import sync_html
+from sync_markdown_files import sync_markdown
 
 
 def main():
     args = create_argument_parser()
     dryrun = check_dry_run(args)
-    md_files = sync_md_files(args, dryrun=dryrun)
-    convert_files(md_files, dryrun=dryrun)
+    md_files = sync_markdown(args, dryrun=dryrun)
+    sync_html(md_files, dryrun=dryrun)
 
 
 def check_dry_run(args) -> bool:
