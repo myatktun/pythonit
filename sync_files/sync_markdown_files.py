@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from subprocess import Popen, PIPE
-from sync_files_with_s3 import sync_files
+from .sync_files_with_s3 import sync_files
 
 
 def sync_markdown(args, *, dryrun=True) -> list[str]:

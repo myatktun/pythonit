@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
-from markdown_to_html import convert_md_to_html
-from sync_files_with_s3 import sync_files
+from .markdown_to_html import convert_md_to_html
+from .sync_files_with_s3 import sync_files
 
 
 def sync_html(md_files: list[str], *, dryrun=True):
