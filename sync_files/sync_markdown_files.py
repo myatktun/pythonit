@@ -18,9 +18,8 @@ def sync_markdown(args, *, dryrun=True) -> list[str]:
     md_files = sync_files(source, destination, dryrun=dryrun,
                           exclude=exclude_pattern, include=include_pattern)
 
-    print(md_files)
-
-    return md_files.strip().split('\n')
+    return [f for f in md_files.strip().split('\n')
+            if not f.startswith("Completed")]
 
 
 def get_sync_dirs(local_dir, s3_bucket, args):
