@@ -17,9 +17,7 @@ def sync_html(md_files: list[str], *, dryrun=True):
 
     (source, destination) = get_sync_dirs(upload)
 
-    output = sync_files(source, destination, dryrun=dryrun)
-
-    print(output)
+    sync_files(source, destination, dryrun=dryrun)
 
 
 def get_sync_dirs(upload: bool) -> tuple[str, str]:
