@@ -11,9 +11,12 @@ def sync_files(source: str, destination: str, *,
     if dryrun:
         command.append("--dryrun")
 
-    output = subprocess_run(command, stdout=PIPE).stdout.decode()
+    output = subprocess_run(command, stdout=PIPE,
+                            encoding="utf-8").stdout
 
     if len(output) == 0:
         sys.exit("No files to sync")
+
+    print(output)
 
     return output
