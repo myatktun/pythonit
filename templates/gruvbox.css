@@ -1,0 +1,201 @@
+:root {
+    --bg_h: #1d2021;
+    --bg: #282828;
+    --bg_s: #32302f;
+    --bg1: #3c3836;
+    --bg2: #504945;
+    --bg3: #665c54;
+    --bg4: #7c6f64;
+
+    --fg: #fbf1c7;
+    --fg1: #ebdbb2;
+    --fg2: #d5c4a1;
+    --fg3: #bdae93;
+    --fg4: #a89984;
+
+    --red: #fb4934;
+    --green: #b8bb26;
+    --yellow: #fabd2f;
+    --blue: #83a598;
+    --purple: #d3869b;
+    --aqua: #8ec07c;
+    --gray: #928374;
+    --orange: #fe8019;
+
+    --red-dim: #cc2412;
+    --green-dim: #98971a;
+    --yellow-dim: #d79921;
+    --blue-dim: #458588;
+    --purple-dim: #b16286;
+    --aqua-dim: #689d6a;
+    --gray-dim: #a89984;
+    --orange-dim: #d65d0e;
+}
+
+body {
+    margin: 2em;
+    font-size: 1.2em;
+    padding-right: 1em;
+    padding-left: 1em;
+    color: var(--fg);
+    background-color: var(--bg);
+}
+
+.header {
+    margin: auto;
+    width: 50%;
+    padding: 10px;
+    font-size: 400%;
+    text-align: center;
+}
+
+.header a {
+    text-decoration: none;
+}
+
+.header a:hover {
+    text-decoration: none;
+    color: var(--fg);
+}
+
+.header a:visited {
+    color: var(--fg);
+}
+
+
+a {
+    color: var(--blue);
+}
+
+a:visited {
+    color: var(--orange-dim)
+}
+
+a:hover {
+    color: var(--green-dim)
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    padding-bottom: 10px;
+    color: var(--fg1);
+}
+
+h1,
+h2 {
+    border-bottom: 1px solid black;
+}
+
+h1 {
+    font-size: 3em;
+}
+
+h2 {
+    font-size: 2em;
+}
+
+h5 {
+    font-style: italic;
+}
+
+p {
+    margin-bottom: 0em;
+}
+
+ol li {
+    line-height: 1.5em;
+}
+
+blockquote {
+    margin-bottom: 1em;
+    padding: 1em .5em;
+    background-color: var(--bg_h);
+    line-height: 1.5;
+}
+
+code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.9em;
+    padding: 0.2em;
+    line-height: 1.5;
+}
+
+pre {
+    word-wrap: normal;
+    overflow: auto;
+    padding: 1em;
+    background-color: var(--bg_s);
+    color: var(--fg);
+    margin: 3em 0em;
+}
+
+/* Keyword red */
+code.sourceCode span.kw {
+    color: var(--red);
+}
+
+/* Datatype yellow */
+code.sourceCode span.dt {
+    color: var(--yellow);
+}
+
+/* DecVal purple */
+code.sourceCode span.dv {
+    color: var(--purple);
+}
+
+/* BaseN purple */
+code.sourceCode span.bn {
+    color: var(--purple);
+}
+
+/* Float purple */
+code.sourceCode span.fl {
+    color: var(--purple);
+}
+
+/* Char purple */
+code.sourceCode span.ch {
+    color: var(--blue);
+}
+
+/* String green */
+code.sourceCode span.st {
+    color: var(--green);
+}
+
+/* Comment medium */
+code.sourceCode span.co {
+    color: var(--gray);
+    font-style: italic;
+}
+
+/* OtherToken aqua */
+code.sourceCode span.ot {
+    color: var(--aqua);
+}
+
+/* Function green */
+code.sourceCode span.fu {
+    color: var(--green);
+}
+
+/* Region marker orange */
+code.sourceCode span.re {
+    color: var(--orange);
+}
+
+/* Error red */
+code.sourceCode span.er {
+    color: var(--red);
+    font-weight: bold;
+}
+
+/* Alert red */
+code.sourceCode span.al {
+    color: var(--red);
+    font-weight: bold;
+}
