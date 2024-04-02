@@ -25,12 +25,18 @@ def create_argument_parser() -> argparse.Namespace:
         help="sync files or only dryrun (default: dryrun)",
         action=argparse.BooleanOptionalAction)
 
+    parser.add_argument(
+        "--html-only",
+        help="convert and sync all html files from local to s3 bucket",
+        action="store_true")
+
     group = parser.add_mutually_exclusive_group()
 
     group.add_argument(
         "--download",
         help="sync files from s3 bucket to local",
         action="store_true")
+
     group.add_argument(
         "--upload",
         help="sync files from local to s3 bucket",
