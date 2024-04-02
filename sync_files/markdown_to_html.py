@@ -29,8 +29,9 @@ def generate_index(index_file: str):
             if isinstance(elt, Link):
                 elt[-1] = (f"{elt[-1][0]}.html", '')
 
-        pandoc.write(doc, format="html", file=f"html/{html_file}",
-                     options=["--template=html/template.html"])
+        os.makedirs(f"/tmp/html", exist_ok=True)
+        pandoc.write(doc, format="html", file=f"/tmp/html/{html_file}",
+                     options=["--template=templates/template.html"])
 
 
 def generate_html(markdown_dir: list[str]):
@@ -38,11 +39,11 @@ def generate_html(markdown_dir: list[str]):
         with open(file, "r", encoding="utf-8") as input_file:
             [category, html_file] = re.split('[/ .]', file)[-3:-1]
             html_file = "".join([html_file, ".html"])
-            os.makedirs(f"html/{category}", exist_ok=True)
-            with open(f"html/{category}/{html_file}", "w",
+            os.makedirs(f"/tmp/html/{category}", exist_ok=True)
+            with open(f"/tmp/html/{category}/{html_file}", "w",
                       encoding="utf-8") as output_file:
                 text = input_file.read()
                 doc = pandoc.read(text, format="markdown_mmd")
                 html = pandoc.write(doc, format="html", options=[
-                                    "--template=html/template.html"])
+                                    "--template=templates/template.html"])
                 output_file.write(html)

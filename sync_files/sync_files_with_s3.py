@@ -15,7 +15,8 @@ def sync_files(source: str, destination: str, *,
                             encoding="utf-8").stdout
 
     if len(output) == 0:
-        sys.exit("No files to sync")
+        print("No files to sync")
+        sys.exit(0)
 
     print(output)
 
