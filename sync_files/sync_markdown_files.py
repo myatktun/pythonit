@@ -11,15 +11,7 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     S3_BUCKET = os.environ['S3_BUCKET']
 
     if (args.html_only):
-        print("Syncing html files only")
-        command = ["find", f"{LOCAL_DIR}", "-mindepth", "2", "-type", "f"]
-        md_files = subprocess_run(
-            command, stdout=PIPE, encoding="utf-8").stdout.strip().split('\n')
-
-        if (args.download):
-            return (False, md_files)
-
-        return (True, md_files)
+        return list_all_markdown(args.download, LOCAL_DIR)
 
     source, destination = get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
 
@@ -35,6 +27,20 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
         '\n') if not f.startswith("Completed")]
 
     return (upload, md_files)
+
+
+def list_all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
+    print("Syncing html files only")
+
+    command = ["find", f"{local_dir}", "-mindepth", "2", "-type", "f"]
+
+    md_files = subprocess_run(
+        command, stdout=PIPE, encoding="utf-8").stdout.strip().split('\n')
+
+    if (download):
+        return (False, md_files)
+
+    return (True, md_files)
 
 
 def get_sync_dirs(local_dir, s3_bucket, args):
