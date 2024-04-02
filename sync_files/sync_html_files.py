@@ -4,11 +4,12 @@ from .markdown_to_html import convert_md_to_html
 from .sync_files_with_s3 import sync_files
 
 
-def sync_html(md_files: list[str], *, dryrun=True):
+def sync_html(md_files: tuple[bool, list[str]], *, dryrun=True):
     load_dotenv()
-    upload = check_upload(md_files[0])
 
-    files_to_convert = ["/".join(f.rsplit('/', 2)[-2:]) for f in md_files]
+    upload = md_files[0]
+
+    files_to_convert = ["/".join(f.rsplit('/', 2)[-2:]) for f in md_files[1]]
 
     LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
 
@@ -30,7 +31,3 @@ def get_sync_dirs(upload: bool) -> tuple[str, str]:
 
     print("Syncing html files from s3 bucket to local")
     return (S3_BUCKET, LOCAL_HTML_DIR)
-
-
-def check_upload(f: str) -> bool:
-    return f.split(':', 1)[0].split(' ')[-1].lower() == "upload"

@@ -1,14 +1,25 @@
 import os
 from dotenv import load_dotenv
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, run as subprocess_run
 from .sync_files_with_s3 import sync_files
 
 
-def sync_markdown(args, *, dryrun=True) -> list[str]:
+def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     load_dotenv()
 
     LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
     S3_BUCKET = os.environ['S3_BUCKET']
+
+    if (args.html_only):
+        print("Syncing html files only")
+        command = ["find", f"{LOCAL_DIR}", "-mindepth", "2", "-type", "f"]
+        md_files = subprocess_run(
+            command, stdout=PIPE, encoding="utf-8").stdout.strip().split('\n')
+
+        if (args.download):
+            return (False, md_files)
+
+        return (True, md_files)
 
     source, destination = get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
 
@@ -18,8 +29,12 @@ def sync_markdown(args, *, dryrun=True) -> list[str]:
     md_files = sync_files(source, destination, dryrun=dryrun,
                           exclude=exclude_pattern, include=include_pattern)
 
-    return [f for f in md_files.strip().split('\n')
-            if not f.startswith("Completed")]
+    upload = check_upload(md_files[0])
+
+    md_files = [f for f in md_files.strip().split(
+        '\n') if not f.startswith("Completed")]
+
+    return (upload, md_files)
 
 
 def get_sync_dirs(local_dir, s3_bucket, args):
@@ -30,6 +45,7 @@ def get_sync_dirs(local_dir, s3_bucket, args):
         print("Syncing markdown files from local to s3 bucket")
         return (local_dir, s3_bucket)
 
+    print("Based on last modified time")
     local_time, s3_time = get_last_modified_times(local_dir, s3_bucket)
 
     if local_time == s3_time:
@@ -77,3 +93,7 @@ def get_time(command):
     latest_time = first_column.communicate()[0].decode("utf-8")
 
     return latest_time.strip()
+
+
+def check_upload(f: str) -> bool:
+    return f.split(':', 1)[0].split(' ')[-1].lower() == "upload"
