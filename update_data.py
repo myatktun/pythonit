@@ -1,10 +1,14 @@
 import argparse
-from sync_files import sync_markdown, sync_html
+from sync_files import sync_markdown, sync_html, sync_templates
 
 
 def main():
     args = create_argument_parser()
     dryrun = check_dry_run(args)
+
+    if (args.templates_only):
+        sync_templates(args, dryrun=dryrun)
+
     md_files = sync_markdown(args, dryrun=dryrun)
     sync_html(md_files, dryrun=dryrun)
 
@@ -28,6 +32,11 @@ def create_argument_parser() -> argparse.Namespace:
     parser.add_argument(
         "--html-only",
         help="convert and sync all html files from local to s3 bucket",
+        action="store_true")
+
+    parser.add_argument(
+        "--templates-only",
+        help="sync files in templates directory",
         action="store_true")
 
     group = parser.add_mutually_exclusive_group()
