@@ -11,9 +11,10 @@ def sync_html(md_files: tuple[bool, list[str]], *, dryrun=True):
 
     files_to_convert = ["/".join(f.rsplit('/', 2)[-2:]) for f in md_files[1]]
 
-    LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
+    LOCAL_DIR_PREFIX = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
 
-    files_to_convert = ["/".join([LOCAL_DIR, f]) for f in files_to_convert]
+    files_to_convert = ["/".join([LOCAL_DIR_PREFIX, f])
+                        for f in files_to_convert]
     convert_md_to_html(files_to_convert)
 
     (source, destination) = get_sync_dirs(upload)

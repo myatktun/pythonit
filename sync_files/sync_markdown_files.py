@@ -11,7 +11,7 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     S3_BUCKET = os.environ['S3_BUCKET']
 
     if (args.html_only):
-        return list_all_markdown(args.download, LOCAL_DIR)
+        return all_markdown(args.download, LOCAL_DIR)
 
     source, destination = get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
 
@@ -21,7 +21,7 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     md_files = sync_files(source, destination, dryrun=dryrun,
                           exclude=exclude_pattern, include=include_pattern)
 
-    upload = check_upload(md_files[0])
+    upload = check_upload(md_files)
 
     md_files = [f for f in md_files.strip().split(
         '\n') if not f.startswith("Completed")]
@@ -29,7 +29,7 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     return (upload, md_files)
 
 
-def list_all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
+def all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
     print("Syncing html files only")
 
     command = ["find", f"{local_dir}", "-mindepth", "2", "-type", "f"]
@@ -66,6 +66,10 @@ def get_sync_dirs(local_dir, s3_bucket, args):
     return (local_dir, s3_bucket)
 
 
+def check_upload(f: str) -> bool:
+    return "upload" in f
+
+
 def get_last_modified_times(local_dir, s3_bucket):
     command1 = ["find", f"{local_dir}", "-mindepth", "2", "-type",
                 "f", "-exec", "stat", "-c", "%y", "{}", "+"]
@@ -99,7 +103,3 @@ def get_time(command):
     latest_time = first_column.communicate()[0].decode("utf-8")
 
     return latest_time.strip()
-
-
-def check_upload(f: str) -> bool:
-    return f.split(':', 1)[0].split(' ')[-1].lower() == "upload"
