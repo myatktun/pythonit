@@ -31,13 +31,15 @@ def generate_index(index_file: str):
 
         os.makedirs(f"/tmp/html", exist_ok=True)
         pandoc.write(doc, format="html", file=f"/tmp/html/{html_file}",
-                     options=["--template=templates/template.html"])
+                     options=["--template=templates/template.html",
+                              "--standalone", "--metadata", "title=Notes"])
 
 
 def generate_html(markdown_dir: list[str]):
     for file in markdown_dir:
         with open(file, "r", encoding="utf-8") as input_file:
             [category, html_file] = re.split('[/ .]', file)[-3:-1]
+            title = html_file
             html_file = "".join([html_file, ".html"])
             os.makedirs(f"/tmp/html/{category}", exist_ok=True)
             with open(f"/tmp/html/{category}/{html_file}", "w",
@@ -45,5 +47,7 @@ def generate_html(markdown_dir: list[str]):
                 text = input_file.read()
                 doc = pandoc.read(text, format="markdown_mmd")
                 html = pandoc.write(doc, format="html", options=[
-                                    "--template=templates/template.html"])
+                                    "--template=templates/template.html",
+                                    "--standalone", "--mathjax",
+                                    "--metadata", f"title={title}"])
                 output_file.write(html)
