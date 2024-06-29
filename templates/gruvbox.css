@@ -62,6 +62,9 @@ body {
     color: var(--fg);
 }
 
+span.math.inline {
+    font-size: 1em;
+}
 
 a {
     color: var(--blue);
