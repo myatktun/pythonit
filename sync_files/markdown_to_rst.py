@@ -1,8 +1,20 @@
 import os
 import re
+import logging
+from dotenv import load_dotenv
 
-MD_DIR = f"{os.environ['HOME']}/Documents/Vimwiki"
+load_dotenv()
+
+MD_DIR = os.environ['MD_DIR']
 SECTION_HEADER_PREFIX = "## "
+RST_DIR = os.environ['RST_DIR']
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 def generate_index_list():
@@ -25,8 +37,7 @@ def generate_index_list():
 
 
 def process_index_rst():
-    index_file_template = """
-Notes
+    index_file_template = """Notes
 =====
 
 .. toctree::
@@ -37,30 +48,32 @@ Notes
 
     index_list = generate_index_list()
 
-    with open(f"{MD_DIR}/index.rst", "w") as f:
+    with open(f"{RST_DIR}/index.rst", "w") as f:
         f.write(index_file_template)
         for index in index_list:
             f.write("   " + index + '\n')
 
 
 def convert_md_to_rst():
-    process_md(f"{MD_DIR}/Linux/Linux.md")
-
     for path, _, files in os.walk(MD_DIR):
         if path == MD_DIR:
             continue
 
         for file_name in files:
             if file_name.endswith(".md"):
+                logging.info(f'Starting processing for file "{file_name}"')
                 file = os.path.join(path, file_name)
                 process_md(file)
+                logging.info(f'Completed processing for file "{file_name}"')
+
+    logging.info('Completed converting markdown files to rst')
 
 
 def process_md(file):
     header_lines_to_write, section_headers = extract_header_data(file)
 
     if header_lines_to_write is None:
-        print("No lines to write")
+        logging.info(f'No lines to write for "{os.path.basename(file)}"')
         return
 
     write_rst(file, header_lines_to_write, section_headers)
@@ -83,13 +96,17 @@ def extract_header_data(file_path):
 
 
 def write_rst(md_file, header_lines_to_write, section_headers):
-    content_regex = r"\[(.*?)\]"
-    main_content_prefix = r"^\d+.*$"
-    section_content_prefix = "* ["
-    section_sub_header_prefix = "* **"
-    back_to_top_prefix = "##### "
+    prefixes = {
+        "main_content": r"^\d+.*$",
+        "section_content": "* [",
+        "section_sub_header": "* **",
+        "back_to_top": "##### ",
+    }
 
-    rst_file = os.path.splitext(md_file)[0] + '.rst'
+    content_regex = r"\[(.*?)\]"
+
+    rst_file = os.path.join(RST_DIR, os.path.splitext(
+        os.path.basename(md_file))[0] + '.rst')
 
     with open(md_file, "r") as original, open(rst_file, "w+") as temp:
 
@@ -105,7 +122,7 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                     generate_section_line("=", len(main_header)) + '\n'
 
             # main content
-            if re.match(main_content_prefix, line):
+            if re.match(prefixes["main_content"], line):
                 match = re.search(content_regex, line)
                 if match is not None:
                     line = f"{main_content_num}. `{match.group(1)}`_\n"
@@ -124,19 +141,19 @@ def write_rst(md_file, header_lines_to_write, section_headers):
 
                 # line_idx, Even: overline Odd: underline
                 if line_idx % 2 == 0:
-                    temp.write("\n" + section_line)
+                    line = "\n" + section_line + "\n"
                 else:
-                    temp.write(section_line + "\n")
+                    line = section_line + "\n" + "\n"
                     section_header_idx += 1
 
                 line_idx += 1
 
             # section sub header
-            if line.startswith(section_sub_header_prefix):
+            if line.startswith(prefixes["section_sub_header"]):
                 line = generate_section_sub_header(line)
 
             # section content
-            if line.startswith(section_content_prefix):
+            if line.startswith(prefixes["section_content"]):
                 match = re.findall(content_regex, line)
                 line = generate_section_content(match)
 
@@ -146,7 +163,7 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                 line = process_bullet_line(line)
 
             # "back to top"
-            if line.startswith(back_to_top_prefix):
+            if line.startswith(prefixes["back_to_top"]):
                 line = "`back to top <#deep-learning>`_\n"
 
             temp.write(line)
@@ -180,6 +197,7 @@ def generate_section_sub_header(line):
     Section Sub Header
     ------------------
     '''
+
     section_sub_header_regex = r"\*\*(.*?)\*\*"
 
     match = re.search(section_sub_header_regex, line)
@@ -196,6 +214,7 @@ def generate_section_content(content_list):
     Format:
     * `content1`_ , `content2`_
     '''
+
     line = "* "
     idx = 0
 
@@ -214,4 +233,5 @@ def main():
     process_index_rst()
 
 
-main()
+if __name__ == "__main__":
+    main()
