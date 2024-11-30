@@ -17,82 +17,85 @@ logging.basicConfig(
 )
 
 
-def generate_index_list():
-    index_list = []
+def process_code_block(line):
+    '''
+    Format:
+    .. code-block:: language
 
-    for path, _, files in os.walk(MD_DIR):
-        if path == MD_DIR:
-            continue
+       code
+    '''
 
-        for file_name in files:
-            if file_name.endswith(".md"):
-                file = os.path.join(path, file_name)
-                index_content = os.path.relpath(file, start=MD_DIR)
-                index_content = index_content.rsplit('.', maxsplit=1)[0]
-                index_list.append(index_content)
+    def replace(match):
+        leading_spaces = match.group(1)
+        language = match.group(2)
 
-    index_list.sort(key=lambda index: index.split('/')[1])
+        if not language:
+            return ""
 
-    return index_list
+        return f"{leading_spaces}.. code-block:: {language}\n"
 
+    line = re.sub(r"^(\s*)```(\w*)$", replace, line)
 
-def process_index_rst():
-    index_file_template = """Notes
-=====
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
-
-"""
-
-    index_list = generate_index_list()
-
-    with open(f"{RST_DIR}/index.rst", "w") as f:
-        f.write(index_file_template)
-        for index in index_list:
-            f.write("   " + index + '\n')
+    return line
 
 
-def convert_md_to_rst():
-    for path, _, files in os.walk(MD_DIR):
-        if path == MD_DIR:
-            continue
+def process_bullet_line(line):
+    # change starting '-' and '>+' to '*', '>' to whitespace
+    # add extra backticks if line contains word with backticks
+    def replace(m: re.Match[str]):
+        if m.group(2):  # - or >+ or >
+            if m.group(2) == ">":
+                return f"{m.group(1)}  "
+            return f"{m.group(1)}* "
+        elif m.group(4):  # backticks
+            return f"``{m.group(4)}``"
 
-        for file_name in files:
-            if file_name.endswith(".md"):
-                logging.info(f'Starting processing for file "{file_name}"')
-                file = os.path.join(path, file_name)
-                process_md(file)
-                logging.info(f'Completed processing for file "{file_name}"')
+        return m.group(0)
 
-    logging.info('Completed converting markdown files to rst')
+    line = re.sub(r"^(\s*)(-|\>\+|\>)\s*|(>\+)|`([^`]*)`", replace, line)
 
-
-def process_md(file):
-    header_lines_to_write, section_headers = extract_header_data(file)
-
-    if header_lines_to_write is None:
-        logging.info(f'No lines to write for "{os.path.basename(file)}"')
-        return
-
-    write_rst(file, header_lines_to_write, section_headers)
+    return line
 
 
-def extract_header_data(file_path):
-    # [header_overline, header_underline]
-    header_lines_to_write = []
+def generate_section_content(content_list):
+    '''
+    Format:
+    * `content1`_ , `content2`_
+    '''
 
-    section_headers = []
+    line = "* "
+    idx = 0
 
-    with open(file_path, "r") as f:
-        for line_num, line in enumerate(f):
-            if line.startswith(SECTION_HEADER_PREFIX):
-                header_lines_to_write.append(line_num - 1)
-                header_lines_to_write.append(line_num + 1)
-                section_headers.append(line.split(' ', maxsplit=1)[1].strip())
+    while idx < len(content_list):
+        line += f"`{content_list[idx]}`_"
+        if idx != len(content_list) - 1:
+            line += ", "
+        idx += 1
 
-    return header_lines_to_write, section_headers
+    line += '\n'
+    return line
+
+
+def generate_section_sub_header(line):
+    '''
+    Format:
+    Section Sub Header
+    ------------------
+    '''
+
+    section_sub_header_regex = r"\*\*(.*?)\*\*"
+
+    match = re.search(section_sub_header_regex, line)
+    if match is not None:
+        header = match.group(1)
+        line = '\n' + header + '\n' + generate_section_line('-', len(header)) \
+            + '\n'
+
+    return line
+
+
+def generate_section_line(format_str, length):
+    return format_str * length
 
 
 def write_rst(md_file, header_lines_to_write, section_headers):
@@ -101,9 +104,12 @@ def write_rst(md_file, header_lines_to_write, section_headers):
         "section_content": "* [",
         "section_sub_header": "* **",
         "back_to_top": "##### ",
+        "code_block_start": r"^\s*```\w*$",
+        "code_block_end": r"^\s*```$"
     }
 
     content_regex = r"\[(.*?)\]"
+    in_code_block = False
 
     rst_file = os.path.join(RST_DIR, os.path.splitext(
         os.path.basename(md_file))[0] + '.rst')
@@ -166,71 +172,102 @@ def write_rst(md_file, header_lines_to_write, section_headers):
             if line.startswith(prefixes["back_to_top"]):
                 line = "`back to top <#deep-learning>`_\n"
 
+            # code block
+            if in_code_block:
+                # need to line up with "c" in ".. code-block::"
+                line = (" " * len(".. ")) + line
+
+            if re.match(prefixes["code_block_start"], line):
+                in_code_block = True
+
+                if re.match(prefixes["code_block_end"], line):
+                    in_code_block = False
+
+                line = process_code_block(line)
+
             temp.write(line)
 
 
-def process_bullet_line(line):
-    # change starting '-' and '>+' to '*', '>' to whitespace
-    # add extra backticks if line contains word with backticks
-    def replace(m: re.Match[str]):
-        if m.group(2):  # - or >+ or >
-            if m.group(2) == ">":
-                return f"{m.group(1)}  "
-            return f"{m.group(1)}* "
-        elif m.group(4):  # backticks
-            return f"``{m.group(4)}``"
+def extract_header_data(file_path):
+    # [header_overline, header_underline]
+    header_lines_to_write = []
 
-        return m.group(0)
+    section_headers = []
 
-    line = re.sub(r"^(\s*)(-|\>\+|\>)\s*|(>\+)|`([^`]*)`", replace, line)
+    with open(file_path, "r") as f:
+        for line_num, line in enumerate(f):
+            if line.startswith(SECTION_HEADER_PREFIX):
+                header_lines_to_write.append(line_num - 1)
+                header_lines_to_write.append(line_num + 1)
+                section_headers.append(line.split(' ', maxsplit=1)[1].strip())
 
-    return line
+    return header_lines_to_write, section_headers
 
 
-def generate_section_line(format_str, length):
-    return format_str * length
+def process_md(file):
+    header_lines_to_write, section_headers = extract_header_data(file)
+
+    if header_lines_to_write is None:
+        logging.info(f'No lines to write for "{os.path.basename(file)}"')
+        return
+
+    write_rst(file, header_lines_to_write, section_headers)
 
 
-def generate_section_sub_header(line):
-    '''
-    Format:
-    Section Sub Header
-    ------------------
-    '''
+def convert_md_to_rst():
+    # process_md("/home/myatktun/Documents/Vimwiki/Linux/Linux.md")
+    for path, _, files in os.walk(MD_DIR):
+        if path == MD_DIR:
+            continue
 
-    section_sub_header_regex = r"\*\*(.*?)\*\*"
+        for file_name in files:
+            if file_name.endswith(".md"):
+                logging.info(f'Starting processing for file "{file_name}"')
+                file = os.path.join(path, file_name)
+                process_md(file)
+                logging.info(f'Completed processing for file "{file_name}"')
 
-    match = re.search(section_sub_header_regex, line)
-    if match is not None:
-        header = match.group(1)
-        line = '\n' + header + '\n' + generate_section_line('-', len(header)) \
-            + '\n'
-
-    return line
+    logging.info('Completed converting markdown files to rst')
 
 
-def generate_section_content(content_list):
-    '''
-    Format:
-    * `content1`_ , `content2`_
-    '''
+def generate_index_list():
+    index_list = []
 
-    line = "* "
-    idx = 0
+    for path, _, files in os.walk(MD_DIR):
+        if path == MD_DIR:
+            continue
 
-    while idx < len(content_list):
-        line += f"`{content_list[idx]}`_"
-        if idx != len(content_list) - 1:
-            line += ", "
-        idx += 1
+        for file_name in files:
+            if file_name.endswith(".md"):
+                index_content = file_name.rsplit('.', maxsplit=1)[0]
+                index_list.append(index_content)
 
-    line += '\n'
-    return line
+    index_list.sort()
+
+    return index_list
+
+
+def process_index_rst():
+    index_file_template = """Notes
+=====
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+
+"""
+
+    index_list = generate_index_list()
+
+    with open(f"{RST_DIR}/index.rst", "w") as f:
+        f.write(index_file_template)
+        for index in index_list:
+            f.write("   " + index + '\n')
 
 
 def main():
-    convert_md_to_rst()
     process_index_rst()
+    # convert_md_to_rst()
 
 
 if __name__ == "__main__":
