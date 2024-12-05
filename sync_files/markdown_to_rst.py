@@ -39,6 +39,21 @@ def process_code_block(line):
     return line
 
 
+def generate_back_to_top(line):
+    '''
+    Format:
+    `back to top <#main-header>`_
+    '''
+
+    match = re.search(r"\((#[^)]+)\)", line)
+
+    if match:
+        main_header = match.group(1)
+        line = f"`back to top <{main_header}>`_\n"
+
+    return line
+
+
 def process_bullet_line(line):
     # change starting '-' and '>+' to '*', '>' to whitespace
     # add extra backticks if line contains word with backticks
@@ -170,7 +185,7 @@ def write_rst(md_file, header_lines_to_write, section_headers):
 
             # "back to top"
             if line.startswith(prefixes["back_to_top"]):
-                line = "`back to top <#deep-learning>`_\n"
+                line = generate_back_to_top(line)
 
             # code block
             if in_code_block:
@@ -214,22 +229,6 @@ def process_md(file):
     write_rst(file, header_lines_to_write, section_headers)
 
 
-def convert_md_to_rst():
-    # process_md("/home/myatktun/Documents/Vimwiki/Linux/Linux.md")
-    for path, _, files in os.walk(MD_DIR):
-        if path == MD_DIR:
-            continue
-
-        for file_name in files:
-            if file_name.endswith(".md"):
-                logging.info(f'Starting processing for file "{file_name}"')
-                file = os.path.join(path, file_name)
-                process_md(file)
-                logging.info(f'Completed processing for file "{file_name}"')
-
-    logging.info('Completed converting markdown files to rst')
-
-
 def generate_index_list():
     index_list = []
 
@@ -257,6 +256,8 @@ def process_index_rst():
 
 """
 
+    logging.info(f'Starting processing for file "index.md"')
+
     index_list = generate_index_list()
 
     with open(f"{RST_DIR}/index.rst", "w") as f:
@@ -264,10 +265,29 @@ def process_index_rst():
         for index in index_list:
             f.write("   " + index + '\n')
 
+    logging.info(f'Completed processing for file "index.md"')
+
+
+def convert_md_to_rst():
+
+    process_index_rst()
+
+    for path, _, files in os.walk(MD_DIR):
+        if path == MD_DIR:
+            continue
+
+        for file_name in files:
+            if file_name.endswith(".md"):
+                logging.info(f'Starting processing for file "{file_name}"')
+                file = os.path.join(path, file_name)
+                process_md(file)
+                logging.info(f'Completed processing for file "{file_name}"')
+
+    logging.info('Completed converting markdown files to rst')
+
 
 def main():
-    process_index_rst()
-    # convert_md_to_rst()
+    convert_md_to_rst()
 
 
 if __name__ == "__main__":
