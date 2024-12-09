@@ -1,19 +1,11 @@
 import os
+from subprocess import run as subprocess_run
 import pandoc
 import re
 import sys
 from dotenv import load_dotenv
 from pandoc.types import *
-
-
-def convert_md_to_html(files_to_convert: list[str]):
-    load_dotenv()
-
-    LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
-    INDEX_FILE = f"{LOCAL_DIR}/index.md"
-
-    generate_index(INDEX_FILE)
-    generate_html(files_to_convert)
+from .markdown_to_rst import convert_md_to_rst
 
 
 def generate_index(index_file: str):
@@ -51,3 +43,26 @@ def generate_html(markdown_dir: list[str]):
                                     "--standalone", "--mathjax",
                                     "--metadata", f"title={title}"])
                 output_file.write(html)
+
+
+def convert_with_pandoc(files_to_convert: list[str]):
+    LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
+    INDEX_FILE = f"{LOCAL_DIR}/index.md"
+
+    generate_index(INDEX_FILE)
+    generate_html(files_to_convert)
+
+
+def convert_with_sphinx():
+    convert_md_to_rst()
+
+    # use "make" to generate html with Sphinx
+    command = ["make", "-C", os.environ["MAKE_DIRECTORY"], "html"]
+
+    subprocess_run(command)
+
+
+def convert_md_to_html(files_to_convert: list[str]):
+    load_dotenv()
+
+    convert_with_sphinx()
