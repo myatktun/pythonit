@@ -23,7 +23,7 @@ def sync_html(md_files: tuple[bool, list[str]], *, dryrun=True):
 
 
 def get_sync_dirs(upload: bool) -> tuple[str, str]:
-    LOCAL_HTML_DIR = "/tmp/html"
+    LOCAL_HTML_DIR = os.environ["LOCAL_HTML_DIR"]
     S3_BUCKET = os.environ['S3_HTML_BUCKET']
 
     if upload:
