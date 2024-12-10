@@ -55,7 +55,7 @@ def generate_back_to_top(line):
 
 
 def process_bullet_line(line):
-    # change starting '-' and '>+' to '*', '>' to whitespace
+    # change starting '-' and '>+' to '*', and '>' to whitespace
     # add extra backticks if line contains word with backticks
     def replace(m: re.Match[str]):
         if m.group(2):  # - or >+ or >
@@ -131,7 +131,7 @@ def write_rst(md_file, header_lines_to_write, section_headers):
 
     with open(md_file, "r") as original, open(rst_file, "w+") as temp:
 
-        line_idx = 0
+        header_line_idx = 0
         section_header_idx = 0
         main_content_num = 1
 
@@ -154,20 +154,20 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                 line = section_headers[section_header_idx] + '\n'
 
             # section line
-            if line_idx < len(header_lines_to_write) and \
-                    line_num == header_lines_to_write[line_idx]:
+            if header_line_idx < len(header_lines_to_write) and \
+                    line_num == header_lines_to_write[header_line_idx]:
 
                 section_header_len = len(section_headers[section_header_idx])
                 section_line = generate_section_line("=", section_header_len)
 
-                # line_idx, Even: overline Odd: underline
-                if line_idx % 2 == 0:
+                # header_line_idx, Even: overline Odd: underline
+                if header_line_idx % 2 == 0:
                     line = "\n" + section_line + "\n"
                 else:
                     line = section_line + "\n" + "\n"
                     section_header_idx += 1
 
-                line_idx += 1
+                header_line_idx += 1
 
             # section sub header
             if line.startswith(prefixes["section_sub_header"]):
@@ -286,9 +286,5 @@ def convert_md_to_rst():
     logging.info('Completed converting markdown files to rst')
 
 
-def main():
-    convert_md_to_rst()
-
-
 if __name__ == "__main__":
-    main()
+    convert_md_to_rst()
