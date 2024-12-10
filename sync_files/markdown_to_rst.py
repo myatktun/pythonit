@@ -109,11 +109,35 @@ def generate_section_sub_header(line):
     return line
 
 
+def generate_header(line, is_main_header=False):
+    '''
+    Format:
+    ===========
+    Main Header
+    ===========
+
+    Format:
+    Section Header
+    ==============
+    '''
+
+    header = line.split(' ', maxsplit=1)[1].strip()
+    if is_main_header:
+        line = generate_section_line("=", len(header)) + '\n' + \
+            header + '\n' + \
+            generate_section_line("=", len(header)) + '\n'
+    else:
+        line = header + '\n' + \
+            generate_section_line('=', len(header)) + '\n'
+
+    return line
+
+
 def generate_section_line(format_str, length):
     return format_str * length
 
 
-def write_rst(md_file, header_lines_to_write, section_headers):
+def process_md(md_file):
     prefixes = {
         "main_content": r"^\d+.*$",
         "section_content": "* [",
@@ -131,16 +155,12 @@ def write_rst(md_file, header_lines_to_write, section_headers):
 
     with open(md_file, "r") as original, open(rst_file, "w+") as temp:
 
-        header_line_idx = 0
-        section_header_idx = 0
         main_content_num = 1
 
         for line_num, line in enumerate(original):
-            # main header
+            # main header, overline and underline
             if line_num == 0:
-                main_header = line.split(' ', maxsplit=1)[1].strip()
-                line = main_header + '\n' + \
-                    generate_section_line("=", len(main_header)) + '\n'
+                line = generate_header(line, is_main_header=True)
 
             # main content
             if re.match(prefixes["main_content"], line):
@@ -149,25 +169,9 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                     line = f"{main_content_num}. `{match.group(1)}`_\n"
                     main_content_num += 1
 
-            # remove '## ' from section header
+            # section header
             if line.startswith(SECTION_HEADER_PREFIX):
-                line = section_headers[section_header_idx] + '\n'
-
-            # section line
-            if header_line_idx < len(header_lines_to_write) and \
-                    line_num == header_lines_to_write[header_line_idx]:
-
-                section_header_len = len(section_headers[section_header_idx])
-                section_line = generate_section_line("=", section_header_len)
-
-                # header_line_idx, Even: overline Odd: underline
-                if header_line_idx % 2 == 0:
-                    line = "\n" + section_line + "\n"
-                else:
-                    line = section_line + "\n" + "\n"
-                    section_header_idx += 1
-
-                header_line_idx += 1
+                line = generate_header(line)
 
             # section sub header
             if line.startswith(prefixes["section_sub_header"]):
@@ -178,8 +182,9 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                 match = re.findall(content_regex, line)
                 line = generate_section_content(match)
 
-            # process each bullet point line, avoid section content line
-            if not re.match(r"^\*\s`.*`_", line) and \
+            # process each bullet point line
+            # avoid section content line and code block line
+            if not re.match(r"^\*\s`.*`_", line) and not in_code_block and \
                     re.match(r"^\s*(?:[-*>`])\s*", line):
                 line = process_bullet_line(line)
 
@@ -192,6 +197,7 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                 # need to line up with "c" in ".. code-block::"
                 line = (" " * len(".. ")) + line
 
+            # code block
             if re.match(prefixes["code_block_start"], line):
                 in_code_block = True
 
@@ -201,32 +207,6 @@ def write_rst(md_file, header_lines_to_write, section_headers):
                 line = process_code_block(line)
 
             temp.write(line)
-
-
-def extract_header_data(file_path):
-    # [header_overline, header_underline]
-    header_lines_to_write = []
-
-    section_headers = []
-
-    with open(file_path, "r") as f:
-        for line_num, line in enumerate(f):
-            if line.startswith(SECTION_HEADER_PREFIX):
-                header_lines_to_write.append(line_num - 1)
-                header_lines_to_write.append(line_num + 1)
-                section_headers.append(line.split(' ', maxsplit=1)[1].strip())
-
-    return header_lines_to_write, section_headers
-
-
-def process_md(file):
-    header_lines_to_write, section_headers = extract_header_data(file)
-
-    if header_lines_to_write is None:
-        logging.info(f'No lines to write for "{os.path.basename(file)}"')
-        return
-
-    write_rst(file, header_lines_to_write, section_headers)
 
 
 def generate_index_list():
