@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from .sync_files_with_s3 import sync_files
+from .sync_files_with_s3 import _sync_files
 
 
 def sync_html(md_files: tuple[bool, list[str]], *, dryrun=True):
@@ -15,12 +15,12 @@ def sync_html(md_files: tuple[bool, list[str]], *, dryrun=True):
     files_to_convert = ["/".join([LOCAL_DIR_PREFIX, f])
                         for f in files_to_convert]
 
-    (source, destination) = get_sync_dirs(upload)
+    (source, destination) = _get_sync_dirs(upload)
 
-    sync_files(source, destination, dryrun=dryrun)
+    _sync_files(source, destination, dryrun=dryrun)
 
 
-def get_sync_dirs(upload: bool) -> tuple[str, str]:
+def _get_sync_dirs(upload: bool) -> tuple[str, str]:
     LOCAL_HTML_DIR = os.environ["LOCAL_HTML_DIR"]
     S3_BUCKET = os.environ['S3_HTML_BUCKET']
 

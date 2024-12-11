@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from subprocess import Popen, PIPE, run as subprocess_run
-from .sync_files_with_s3 import sync_files
+from .sync_files_with_s3 import _sync_files
 
 
 def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
@@ -11,17 +11,17 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     S3_BUCKET = os.environ['S3_BUCKET']
 
     if (args.html_only):
-        return all_markdown(args.download, LOCAL_DIR)
+        return _all_markdown(args.download, LOCAL_DIR)
 
-    source, destination = get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
+    source, destination = _get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
 
     exclude_pattern = "*.md"
     include_pattern = "*/*.md"
 
-    md_files = sync_files(source, destination, dryrun=dryrun,
-                          exclude=exclude_pattern, include=include_pattern)
+    md_files = _sync_files(source, destination, dryrun=dryrun,
+                           exclude=exclude_pattern, include=include_pattern)
 
-    upload = check_upload(md_files)
+    upload = _check_upload(md_files)
 
     md_files = [f for f in md_files.strip().split(
         '\n') if not f.startswith("Completed")]
@@ -29,7 +29,7 @@ def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
     return (upload, md_files)
 
 
-def all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
+def _all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
     print("Syncing html files only")
 
     command = ["find", f"{local_dir}", "-mindepth", "2", "-type", "f"]
@@ -43,7 +43,7 @@ def all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
     return (True, md_files)
 
 
-def get_sync_dirs(local_dir, s3_bucket, args):
+def _get_sync_dirs(local_dir, s3_bucket, args):
     if args.download:
         print("Syncing markdown files from s3 bucket to local")
         return (s3_bucket, local_dir)
@@ -52,7 +52,7 @@ def get_sync_dirs(local_dir, s3_bucket, args):
         return (local_dir, s3_bucket)
 
     print("Based on last modified time")
-    local_time, s3_time = get_last_modified_times(local_dir, s3_bucket)
+    local_time, s3_time = _get_last_modified_times(local_dir, s3_bucket)
 
     if local_time == s3_time:
         print("All files are in sync")
@@ -66,23 +66,23 @@ def get_sync_dirs(local_dir, s3_bucket, args):
     return (local_dir, s3_bucket)
 
 
-def check_upload(f: str) -> bool:
+def _check_upload(f: str) -> bool:
     return "upload" in f
 
 
-def get_last_modified_times(local_dir, s3_bucket):
+def _get_last_modified_times(local_dir, s3_bucket):
     command1 = ["find", f"{local_dir}", "-mindepth", "2", "-type",
                 "f", "-exec", "stat", "-c", "%y", "{}", "+"]
 
     command2 = ["aws", "s3", "ls", f"{s3_bucket}", "--recursive"]
 
-    local_time = get_time(command1)
-    s3_time = get_time(command2)
+    local_time = _get_time(command1)
+    s3_time = _get_time(command2)
 
     return (local_time.split(".")[0], s3_time)
 
 
-def get_time(command):
+def _get_time(command):
     time_list = Popen(command, stdout=PIPE)
     assert time_list.stdout is not None
 
