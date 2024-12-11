@@ -1,5 +1,7 @@
 import argparse
-from sync_files import sync_markdown, sync_html, sync_templates
+import sys
+from modules.file_converter import convert_md_to_rst, convert_rst_to_html
+from modules.sync_files import sync_templates, sync_markdown, sync_html
 
 
 def main():
@@ -8,6 +10,9 @@ def main():
 
     if (args.templates_only):
         sync_templates(args, dryrun=dryrun)
+
+    convert_md_to_rst()
+    convert_rst_to_html()
 
     md_files = sync_markdown(args, dryrun=dryrun)
     sync_html(md_files, dryrun=dryrun)
@@ -23,6 +28,10 @@ def check_dry_run(args) -> bool:
 def create_argument_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         "Sync files between local directory and s3 bucket")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
     parser.add_argument(
         "--dryrun",
