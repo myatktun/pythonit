@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 
-def process_code_block(line):
+def _process_code_block(line):
     '''
     Format:
     .. code-block:: language
@@ -39,7 +39,7 @@ def process_code_block(line):
     return line
 
 
-def generate_back_to_top(line):
+def _generate_back_to_top(line):
     '''
     Format:
     `back to top <#main-header>`_
@@ -54,7 +54,7 @@ def generate_back_to_top(line):
     return line
 
 
-def process_bullet_line(line):
+def _process_bullet_line(line):
     # change starting '-' to '*', '>+' to '-', and '>' to whitespace
     # add extra backticks if line contains word with backticks
     def replace(m: re.Match[str]):
@@ -74,7 +74,7 @@ def process_bullet_line(line):
     return line
 
 
-def generate_section_content(content_list):
+def _generate_section_content(content_list):
     '''
     Format:
     * `content1`_ , `content2`_
@@ -93,7 +93,7 @@ def generate_section_content(content_list):
     return line
 
 
-def generate_section_sub_header(line):
+def _generate_section_sub_header(line):
     '''
     Format:
     Section Sub Header
@@ -105,13 +105,13 @@ def generate_section_sub_header(line):
     match = re.search(section_sub_header_regex, line)
     if match is not None:
         header = match.group(1)
-        line = '\n' + header + '\n' + generate_section_line('-', len(header)) \
+        line = '\n' + header + '\n' + _generate_section_line('-', len(header)) \
             + '\n'
 
     return line
 
 
-def generate_header(line, is_main_header=False):
+def _generate_header(line, is_main_header=False):
     '''
     Format:
     ===========
@@ -125,21 +125,21 @@ def generate_header(line, is_main_header=False):
 
     header = line.split(' ', maxsplit=1)[1].strip()
     if is_main_header:
-        line = generate_section_line("=", len(header)) + '\n' + \
+        line = _generate_section_line("=", len(header)) + '\n' + \
             header + '\n' + \
-            generate_section_line("=", len(header)) + '\n'
+            _generate_section_line("=", len(header)) + '\n'
     else:
         line = header + '\n' + \
-            generate_section_line('=', len(header)) + '\n'
+            _generate_section_line('=', len(header)) + '\n'
 
     return line
 
 
-def generate_section_line(format_str, length):
+def _generate_section_line(format_str, length):
     return format_str * length
 
 
-def process_md(md_file):
+def _process_md(md_file):
     prefixes = {
         "main_content": r"^\d+.*$",
         "section_content": "* [",
@@ -162,7 +162,7 @@ def process_md(md_file):
         for line_num, line in enumerate(original):
             # main header, overline and underline
             if line_num == 0:
-                line = generate_header(line, is_main_header=True)
+                line = _generate_header(line, is_main_header=True)
 
             # main content
             if re.match(prefixes["main_content"], line):
@@ -173,26 +173,26 @@ def process_md(md_file):
 
             # section header
             if line.startswith(SECTION_HEADER_PREFIX):
-                line = generate_header(line)
+                line = _generate_header(line)
 
             # section sub header
             if line.startswith(prefixes["section_sub_header"]):
-                line = generate_section_sub_header(line)
+                line = _generate_section_sub_header(line)
 
             # section content
             if line.startswith(prefixes["section_content"]):
                 match = re.findall(content_regex, line)
-                line = generate_section_content(match)
+                line = _generate_section_content(match)
 
             # process each bullet point line
             # avoid section content line and code block line
             if not re.match(r"^\*\s`.*`_", line) and not in_code_block and \
                     re.match(r"^\s*(?:[-*>`])\s*", line):
-                line = process_bullet_line(line)
+                line = _process_bullet_line(line)
 
             # "back to top"
             if line.startswith(prefixes["back_to_top"]):
-                line = generate_back_to_top(line)
+                line = _generate_back_to_top(line)
 
             # code block
             if in_code_block:
@@ -206,12 +206,12 @@ def process_md(md_file):
                 if re.match(prefixes["code_block_end"], line):
                     in_code_block = False
 
-                line = process_code_block(line)
+                line = _process_code_block(line)
 
             temp.write(line)
 
 
-def generate_index_list():
+def _generate_index_list():
     index_list = []
 
     for path, _, files in os.walk(MD_DIR):
@@ -228,7 +228,7 @@ def generate_index_list():
     return index_list
 
 
-def process_index_rst():
+def _process_index_rst():
     index_file_template = """Notes
 =====
 
@@ -240,7 +240,7 @@ def process_index_rst():
 
     logging.info(f'Starting processing for file "index.md"')
 
-    index_list = generate_index_list()
+    index_list = _generate_index_list()
 
     with open(f"{RST_DIR}/index.rst", "w") as f:
         f.write(index_file_template)
@@ -252,7 +252,7 @@ def process_index_rst():
 
 def convert_md_to_rst():
 
-    process_index_rst()
+    _process_index_rst()
 
     for path, _, files in os.walk(MD_DIR):
         if path == MD_DIR:
@@ -262,7 +262,7 @@ def convert_md_to_rst():
             if file_name.endswith(".md"):
                 logging.info(f'Starting processing for file "{file_name}"')
                 file = os.path.join(path, file_name)
-                process_md(file)
+                _process_md(file)
                 logging.info(f'Completed processing for file "{file_name}"')
 
     logging.info('Completed converting markdown files to rst')
