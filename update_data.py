@@ -1,6 +1,5 @@
 import argparse
 import sys
-from modules.file_converter import convert_md_to_rst, convert_rst_to_html
 from modules.sync_files import sync_templates, sync_markdown, sync_html
 
 
@@ -10,12 +9,14 @@ def main():
 
     if (args.templates_only):
         sync_templates(args, dryrun=dryrun)
+        return
 
-    convert_md_to_rst()
-    convert_rst_to_html()
+    if (args.html_only):
+        sync_html(True, dryrun=dryrun)
+        return
 
-    md_files = sync_markdown(args, dryrun=dryrun)
-    sync_html(md_files, dryrun=dryrun)
+    sync_markdown(args, dryrun=dryrun)
+    sync_html(True, dryrun=dryrun)
 
 
 def check_dry_run(args) -> bool:
