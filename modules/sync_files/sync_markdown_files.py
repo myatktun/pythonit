@@ -1,46 +1,22 @@
 import os
 from dotenv import load_dotenv
-from subprocess import Popen, PIPE, run as subprocess_run
+from subprocess import Popen, PIPE
 from .sync_files_with_s3 import _sync_files
 
 
-def sync_markdown(args, *, dryrun=True) -> tuple[bool, list[str]]:
+def sync_markdown(args, *, dryrun=True):
     load_dotenv()
 
     LOCAL_DIR = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
     S3_BUCKET = os.environ['S3_BUCKET']
-
-    if (args.html_only):
-        return _all_markdown(args.download, LOCAL_DIR)
 
     source, destination = _get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
 
     exclude_pattern = "*.md"
     include_pattern = "*/*.md"
 
-    md_files = _sync_files(source, destination, dryrun=dryrun,
-                           exclude=exclude_pattern, include=include_pattern)
-
-    upload = _check_upload(md_files)
-
-    md_files = [f for f in md_files.strip().split(
-        '\n') if not f.startswith("Completed")]
-
-    return (upload, md_files)
-
-
-def _all_markdown(download: bool, local_dir: str) -> tuple[bool, list[str]]:
-    print("Syncing html files only")
-
-    command = ["find", f"{local_dir}", "-mindepth", "2", "-type", "f"]
-
-    md_files = subprocess_run(
-        command, stdout=PIPE, encoding="utf-8").stdout.strip().split('\n')
-
-    if (download):
-        return (False, md_files)
-
-    return (True, md_files)
+    _sync_files(source, destination, dryrun=dryrun,
+                exclude=exclude_pattern, include=include_pattern)
 
 
 def _get_sync_dirs(local_dir, s3_bucket, args):
@@ -64,10 +40,6 @@ def _get_sync_dirs(local_dir, s3_bucket, args):
 
     print("Syncing markdown files from local to s3 bucket")
     return (local_dir, s3_bucket)
-
-
-def _check_upload(f: str) -> bool:
-    return "upload" in f
 
 
 def _get_last_modified_times(local_dir, s3_bucket):

@@ -1,19 +1,14 @@
 import os
 from dotenv import load_dotenv
 from .sync_files_with_s3 import _sync_files
+from modules.file_converter import convert_md_to_rst, convert_rst_to_html
 
 
-def sync_html(md_files: tuple[bool, list[str]], *, dryrun=True):
+def sync_html(upload: bool, dryrun=True):
     load_dotenv()
 
-    upload = md_files[0]
-
-    files_to_convert = ["/".join(f.rsplit('/', 2)[-2:]) for f in md_files[1]]
-
-    LOCAL_DIR_PREFIX = os.environ['HOME'] + "/" + os.environ['LOCAL_DIR']
-
-    files_to_convert = ["/".join([LOCAL_DIR_PREFIX, f])
-                        for f in files_to_convert]
+    convert_md_to_rst()
+    convert_rst_to_html()
 
     (source, destination) = _get_sync_dirs(upload)
 
