@@ -3,8 +3,10 @@
 Just learning python by solving my own problems.
 
 This repository has python scripts that convert markdown to rst and html. Markdown and html
-files are then synced with AWS S3 bucket, and AWS Amplify is used to host a static website from
-S3 files.
+files are then synced with AWS S3 bucket
+
+Generated HTML files can be hosted using Github Pages or AWS Amplify. Currently, it is hosted
+at [myatktun.github.io](https://myatktun.github.io).
 
 ## Pyenv and Python LSP Server
 
