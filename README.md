@@ -105,7 +105,8 @@ aws amplify create-branch --region <region-id> --app-id <app-id> --branch-name <
 
 Update the S3 bucket policy in S3 Console using the template below. Edit `<branch-name>`,
 `<bucket-name>`, `<account-id>`, `<region-id>`, and use the `<app-id>` generated from
-`aws amplify create-app` command.
+`aws amplify create-app` command. Can manually update the policy in S3 Console, or put the
+policy in json file, and use AWS CLI.
 
 ```json
 {
@@ -155,6 +156,10 @@ Update the S3 bucket policy in S3 Console using the template below. Edit `<branc
         }
     ]
 }
+```
+
+```sh
+aws s3api put-bucket-policy --bucket <bucket-name> --region <region-id> --policy file://<file-name>.json
 ```
 
 Start Amplify deployment. You can also create it first.
