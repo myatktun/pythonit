@@ -1,9 +1,19 @@
-import argparse
-import sys
 from modules.sync_files import sync_templates, sync_markdown, sync_html
+
+import argparse
+import datetime
+import logging
+from subprocess import run as subprocess_run
+import sys
 
 
 def main():
+    logging.basicConfig(
+        level=logging.ERROR,
+        format="[%(asctime)s] %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
     args = create_argument_parser()
     dryrun = check_dry_run(args)
 
@@ -17,6 +27,19 @@ def main():
 
     sync_markdown(args, dryrun=dryrun)
     sync_html(True, dryrun=dryrun)
+
+    push_html_to_github()
+
+
+def push_html_to_github() -> None:
+    commit_msg = datetime.datetime.now().strftime(
+        "[%Y-%m-%d %H:%M:%S]: Update HTML files")
+
+    exit_code = subprocess_run(["./commit_files.sh", commit_msg]).returncode
+
+    if exit_code:
+        logging.error("Failed to push html files to github repository")
+        exit(1)
 
 
 def check_dry_run(args) -> bool:
