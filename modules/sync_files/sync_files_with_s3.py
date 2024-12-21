@@ -1,13 +1,23 @@
+from dataclasses import dataclass
 from subprocess import run as subprocess_run
 
 
-def _sync_files(source: str, destination: str, *,
-                dryrun=True, exclude="", include=""):
+@dataclass
+class SyncOptions:
+    source: str
+    destination: str
+    exclude_pattern: str = ""
+    include_pattern: str = ""
+    dryrun: bool = True
 
-    command = ["aws", "s3", "sync", source, destination, "--exclude",
-               exclude, "--include", include, "--size-only"]
 
-    if dryrun:
+def _sync_files(option: SyncOptions) -> None:
+
+    command = ["aws", "s3", "sync", option.source, option.destination,
+               "--exclude", option.exclude_pattern,
+               "--include", option.include_pattern, "--size-only"]
+
+    if option.dryrun:
         command.append("--dryrun")
 
     subprocess_run(command)

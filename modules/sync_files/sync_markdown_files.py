@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from subprocess import Popen, PIPE
-from .sync_files_with_s3 import _sync_files
+from .sync_files_with_s3 import _sync_files, SyncOptions
 
 
 def sync_markdown(args, *, dryrun=True):
@@ -12,11 +12,11 @@ def sync_markdown(args, *, dryrun=True):
 
     source, destination = _get_sync_dirs(LOCAL_DIR, S3_BUCKET, args)
 
-    exclude_pattern = "*.md"
-    include_pattern = "*/*.md"
+    sync_option = SyncOptions(source, destination,
+                              include_pattern="*/*.md", exclude_pattern="*.md",
+                              dryrun=dryrun)
 
-    _sync_files(source, destination, dryrun=dryrun,
-                exclude=exclude_pattern, include=include_pattern)
+    _sync_files(sync_option)
 
 
 def _get_sync_dirs(local_dir, s3_bucket, args):
