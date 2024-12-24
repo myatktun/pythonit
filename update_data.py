@@ -1,13 +1,18 @@
-from modules.sync_files import sync_templates, sync_markdown, sync_html
+from modules.sync_files import sync_with_s3, S3Options
 
 import argparse
+from argparse import Namespace
 import datetime
+from dotenv import load_dotenv
 import logging
+import os
 from subprocess import run as subprocess_run
 import sys
 
 
 def main():
+    load_dotenv()
+
     logging.basicConfig(
         level=logging.ERROR,
         format="[%(asctime)s] %(levelname)s: %(message)s",
@@ -15,20 +20,37 @@ def main():
     )
 
     args = create_argument_parser()
-    dryrun = check_dry_run(args)
 
-    if (args.templates_only):
-        sync_templates(args, dryrun=dryrun)
-        return
+    if not args.html_only:
+        update_markdown(args)
 
-    if (args.html_only):
-        sync_html(True, dryrun=dryrun)
-        return
+    if not args.markdown_only:
+        update_html(args)
 
-    sync_markdown(args, dryrun=dryrun)
-    sync_html(True, dryrun=dryrun)
 
-    push_html_to_github()
+def update_markdown(args: Namespace) -> None:
+    LOCAL_MD_DIR = os.environ['LOCAL_MD_DIR']
+    S3_MD_BUCKET = os.environ['S3_MD_BUCKET']
+
+    sync_options = S3Options(source=LOCAL_MD_DIR, destination=S3_MD_BUCKET,
+                             include_pattern="*/*.md", exclude_pattern="*.md",
+                             dryrun=check_dryrun(args.dryrun))
+
+    sync_with_s3(sync_options)
+
+
+def update_html(args: Namespace) -> None:
+    LOCAL_HTML_DIR = os.environ['LOCAL_HTML_DIR']
+    S3_HTML_BUCKET = os.environ['S3_HTML_BUCKET']
+
+    sync_options = S3Options(source=LOCAL_HTML_DIR, destination=S3_HTML_BUCKET,
+                             exclude_pattern=".buildinfo.bak",
+                             dryrun=check_dryrun(args.dryrun))
+
+    sync_with_s3(sync_options)
+
+    if not check_dryrun(args.dryrun):
+        push_html_to_github()
 
 
 def push_html_to_github() -> None:
@@ -42,11 +64,11 @@ def push_html_to_github() -> None:
         exit(1)
 
 
-def check_dry_run(args) -> bool:
-    if args.dryrun is None:
+def check_dryrun(dryrun: bool | None) -> bool:
+    if dryrun is None:
         return True
 
-    return args.dryrun
+    return dryrun
 
 
 def create_argument_parser() -> argparse.Namespace:
@@ -64,7 +86,12 @@ def create_argument_parser() -> argparse.Namespace:
 
     parser.add_argument(
         "--html-only",
-        help="convert and sync all html files from local to s3 bucket",
+        help="only convert and sync html files from local to s3 bucket",
+        action="store_true")
+
+    parser.add_argument(
+        "--markdown-only",
+        help="only sync markdown files from local to s3 bucket",
         action="store_true")
 
     parser.add_argument(
