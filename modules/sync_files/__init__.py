@@ -1,5 +1,3 @@
-from .sync_html_files import sync_html
-from .sync_markdown_files import sync_markdown
-from .sync_template_files import sync_templates
+from .sync_files_with_s3 import sync_with_s3, S3Options
 
-__all__ = ["sync_html", "sync_markdown", "sync_templates"]
+__all__ = ["sync_with_s3", "S3Options"]
