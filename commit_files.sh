@@ -1,10 +1,11 @@
 #!/bin/bash
 
 source ./.env
+set -e
 
 
 main () {
-    COMMIT_MSG="$1"
+    COMMIT_MSG="$@"
 
     if [[ -z $COMMIT_MSG ]]; then
         echo "Commit message not provided"
@@ -16,14 +17,14 @@ main () {
 
     check_git_status
 
-    git commit -am $COMMIT_MSG
+    git commit -am "$COMMIT_MSG"
     git push
 }
 
 check_git_status () {
     status="$(git st)"
 
-    if [[ $status == *"up to date"* ]]; then
+    if [[ $status == *"nothing to commit"* ]]; then
         echo "git: Nothing to add and push"
         exit 0
     fi
