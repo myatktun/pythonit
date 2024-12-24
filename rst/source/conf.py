@@ -7,9 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Notes'
-# copyright = '2024, Myat Kyaw Tun'
-# author = 'Myat Kyaw Tun'
-author = ''
+copyright = '2024, Myat Kyaw Tun'
+author = 'Myat Kyaw Tun'
 # release = '0.0.1'
 
 # -- General configuration ---------------------------------------------------
