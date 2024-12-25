@@ -1,4 +1,5 @@
 from modules.sync_files import sync_with_s3, S3Options
+from modules.file_converter import convert_md_to_rst, convert_rst_to_html
 
 import argparse
 from argparse import Namespace
@@ -47,10 +48,12 @@ def update_html(args: Namespace) -> None:
                              exclude_pattern=".buildinfo.bak",
                              dryrun=check_dryrun(args.dryrun))
 
-    sync_with_s3(sync_options)
-
     if not check_dryrun(args.dryrun):
+        convert_md_to_rst()
+        convert_rst_to_html()
         push_html_to_github()
+
+    sync_with_s3(sync_options)
 
 
 def push_html_to_github() -> None:
