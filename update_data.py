@@ -30,22 +30,34 @@ def main():
 
 
 def update_markdown(args: Namespace) -> None:
-    LOCAL_MD_DIR = os.environ['LOCAL_MD_DIR']
-    S3_MD_BUCKET = os.environ['S3_MD_BUCKET']
+    source = os.environ['LOCAL_MD_DIR']
+    destination = os.environ['S3_MD_BUCKET']
+    last_modified = True
 
-    sync_options = S3Options(source=LOCAL_MD_DIR, destination=S3_MD_BUCKET,
+    if args.download:
+        source, destination = destination, source
+        last_modified = False
+
+    sync_options = S3Options(source=source, destination=destination,
                              include_pattern="*/*.md", exclude_pattern="*.md",
+                             last_modified=last_modified,
                              dryrun=check_dryrun(args.dryrun))
 
     sync_with_s3(sync_options)
 
 
 def update_html(args: Namespace) -> None:
-    LOCAL_HTML_DIR = os.environ['LOCAL_HTML_DIR']
-    S3_HTML_BUCKET = os.environ['S3_HTML_BUCKET']
+    source = os.environ['LOCAL_HTML_DIR']
+    destination = os.environ['S3_HTML_BUCKET']
+    last_modified = True
 
-    sync_options = S3Options(source=LOCAL_HTML_DIR, destination=S3_HTML_BUCKET,
+    if args.download:
+        source, destination = destination, source
+        last_modified = False
+
+    sync_options = S3Options(source=source, destination=destination,
                              exclude_pattern=".buildinfo.bak",
+                             last_modified=last_modified,
                              dryrun=check_dryrun(args.dryrun))
 
     if not check_dryrun(args.dryrun):
