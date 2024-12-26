@@ -9,6 +9,7 @@ class S3Options:
     destination: str
     exclude_pattern: str = ""
     include_pattern: str = ""
+    last_modified: bool = True
     dryrun: bool = True
 
 
@@ -16,7 +17,9 @@ def sync_with_s3(sync_options: S3Options) -> None:
 
     s3_client = boto3.client("s3")
 
-    _choose_sync_dirs(sync_options, s3_client)
+    if sync_options.last_modified:
+        print("Syncing files based on last modified time")
+        _choose_sync_dirs(sync_options, s3_client)
 
     if sync_options.destination.startswith("s3://"):
         _upload_to_s3(sync_options, s3_client)
@@ -25,8 +28,6 @@ def sync_with_s3(sync_options: S3Options) -> None:
 
 
 def _choose_sync_dirs(sync_options: S3Options, s3_client) -> None:
-
-    print("Syncing files based on last modified time")
 
     local_time, s3_time = _get_last_modified(
         sync_options.source, sync_options.destination, s3_client)
@@ -113,9 +114,9 @@ def _download_from_s3(sync_options: S3Options, s3_client) -> None:
     for key, file in files_to_sync.items():
         destination = sync_options.destination + '/' + key
         if sync_options.dryrun:
-            print(f"(download: dryrun) {file} <- {destination}")
+            print(f"(download: dryrun) {destination} <- {file}")
         else:
-            print(f"(download) {file} <- {destination}")
+            print(f"(download) {destination} <- {file}")
             s3_client.download_file(bucket, key, file)
 
 
@@ -162,7 +163,7 @@ def _get_local_file_list(source: str) -> dict[str, int]:
 def _get_s3_file_list(bucket: str, s3_client) -> dict[str, int]:
 
     file_list: dict[str, int] = {}
-    bucket: str = bucket.removeprefix("s3://")
+    bucket = bucket.removeprefix("s3://")
 
     response = s3_client.list_objects_v2(Bucket=bucket)
 
