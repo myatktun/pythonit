@@ -61,7 +61,7 @@ def update_html(args: Namespace) -> None:
                              dryrun=check_dryrun(args.dryrun))
 
     if not check_dryrun(args.dryrun):
-        convert_md_to_rst()
+        convert_md_to_rst(os.environ['LOCAL_MD_DIR'])
         convert_rst_to_html()
         push_html_to_github()
 
