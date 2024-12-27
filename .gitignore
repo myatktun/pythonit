@@ -7,3 +7,4 @@ rst/*
 !rst/source
 rst/source/*
 !rst/source/conf.py
+misc/
