@@ -1,5 +1,5 @@
 from modules.sync_files import sync_with_s3, S3Options
-from modules.file_converter import convert_md_to_rst, convert_rst_to_html
+from modules.file_converter import md_to_rst, convert_rst_to_html
 
 import argparse
 from argparse import Namespace
@@ -61,7 +61,8 @@ def update_html(args: Namespace) -> None:
                              dryrun=check_dryrun(args.dryrun))
 
     if not check_dryrun(args.dryrun):
-        convert_md_to_rst(os.environ['LOCAL_MD_DIR'])
+        md_to_rst(os.environ['LOCAL_MD_DIR'],
+                  os.environ['LOCAL_RST_DIR'])
         convert_rst_to_html()
         push_html_to_github()
 
