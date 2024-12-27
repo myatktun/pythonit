@@ -7,9 +7,7 @@ import re
 load_dotenv()
 
 SECTION_HEADER_PREFIX = "## "
-RST_DIR = os.environ['RST_DIR']
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] %(levelname)s: %(message)s",
@@ -17,23 +15,25 @@ logging.basicConfig(
 )
 
 
-def convert_md_to_rst(source: str) -> None:
+def md_to_rst(source: str, destination: str) -> None:
 
     for file_path in Path(source).rglob("*"):
         if file_path.is_dir():
             continue
 
         logging.info(f'Starting processing for file "{file_path}"')
+
         if file_path.name == "index.md":
-            _process_index_file(file_path.absolute().as_posix())
+            _process_index_file(file_path.absolute().as_posix(), destination)
         else:
-            _process_md(file_path)
-        logging.info(f'Completed processing for file "{file_path}"')
+            _process_md_file(file_path.absolute().as_posix(), destination)
+
+        logging.info(f'Completed processing for file "{file_path}"\n')
 
     logging.info('Completed converting markdown files to rst')
 
 
-def _process_index_file(source: str) -> None:
+def _process_index_file(source: str, destination: str) -> None:
     index_file_template = """Notes
 =====
 
@@ -45,7 +45,7 @@ def _process_index_file(source: str) -> None:
 
     index_list: list[str] = _generate_index_list(source)
 
-    with open(f"{RST_DIR}/index.rst", "w") as f:
+    with open(f"{destination}/index.rst", "w") as f:
         f.write(index_file_template)
         for index in index_list:
             f.write("   " + index + '\n')
@@ -66,7 +66,7 @@ def _generate_index_list(source: str) -> list[str]:
     return index_list
 
 
-def _process_md(md_file) -> None:
+def _process_md_file(md_file: str, destination: str) -> None:
     prefixes = {
         "main_content": r"^\d+.*$",
         "section_content": "* [",
@@ -79,7 +79,7 @@ def _process_md(md_file) -> None:
     content_regex = r"\[(.*?)\]"
     in_code_block = False
 
-    rst_file = os.path.join(RST_DIR, os.path.splitext(
+    rst_file = os.path.join(destination, os.path.splitext(
         os.path.basename(md_file))[0] + '.rst')
 
     with open(md_file, "r") as original, open(rst_file, "w+") as temp:
