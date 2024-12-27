@@ -75,12 +75,13 @@ rst files are converted to html using [Sphinx](https://www.sphinx-doc.org/en/mas
 
 ## Environment Variables
 
-Set the environment variables for MONGO_URI, DB_NAME, LOCAL_DIR and S3_BUCKET.
+To sync files with S3, set environment variables for `LOCAL_MD_DIR`, `S3_MD_BUCKET`,
+`LOCAL_HTML_DIR`, and `S3_HTML_BUCKET`.
 
-To convert markdown to rst, set environment variables for MD_DIR, RST_DIR.
+To convert markdown to rst, set environment variables for `LOCAL_MD_DIR`, `RST_DIR`,
+`MAKE_DIRECTORY`.
 
-To sync files with S3, set environment variables for LOCAL_DIR, LOCAL_HTML_DIR, S3_HTML_BUCKET,
-S3_BUCKET.
+To push HTML files to GitHub repository, set environment variables for `GH_REPO`.
 
 ## Hosting Static Website with GitHub Pages
 
@@ -94,14 +95,15 @@ what it does, and the file is empty.
 
 ## Hosting Static Website with AWS S3 and Amplify
 
-After html files are synced with S3, it is hosted using AWS Amplify.
+Instead of having a public repository on GitHub Pages, html files in the S3 bucket can also be
+hosted using AWS Amplify.
 
 Right now, I haven't figured out how to create and host using AWS CLI. The only workaround is
 to zip all the html files, sync it to S3 and use it in the `aws amplify` command
 
 S3 bucket need to have certain policies to allow Amplify to get objects while public access is
-blocked. I'm currently using a bucket policy template generated when the site is manually
-deployed using Amplify Console.
+blocked. As a reference, I have provided the bucket policy template generated when the site is
+manually deployed using Amplify Console.
 
 Create an Amplify app, and it will output an `<app-id>` to be used in other commands.
 
