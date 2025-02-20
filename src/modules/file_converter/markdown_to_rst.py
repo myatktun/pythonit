@@ -8,29 +8,24 @@ load_dotenv()
 
 SECTION_HEADER_PREFIX = "## "
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(levelname)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
 
 def md_to_rst(source: str, destination: str) -> None:
+    logger = logging.getLogger(__name__)
 
     for file_path in Path(source).rglob("*"):
         if file_path.is_dir():
             continue
 
-        logging.info(f'Starting processing for file "{file_path}"')
+        logger.info(f'Starting processing for file "{file_path}"')
 
         if file_path.name == "index.md":
             _process_index_file(file_path.absolute().as_posix(), destination)
         else:
             _process_md_file(file_path.absolute().as_posix(), destination)
 
-        logging.info(f'Completed processing for file "{file_path}"\n')
+        logger.info(f'Completed processing for file "{file_path}"\n')
 
-    logging.info('Completed converting markdown files to rst')
+    logger.info('Completed converting markdown files to rst')
 
 
 def _process_index_file(source: str, destination: str) -> None:
