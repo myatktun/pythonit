@@ -6,7 +6,7 @@ load_dotenv()
 
 
 def main():
-    file_location = f"{os.environ['HOME']}/{os.environ['LOCAL_DIR']}"
+    file_location = f"{os.environ['LOCAL_MD_DIR']}"
     write_to_file(file_location)
 
 
