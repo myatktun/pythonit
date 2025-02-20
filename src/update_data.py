@@ -15,9 +15,13 @@ def main():
     load_dotenv()
 
     logging.basicConfig(
-        level=logging.ERROR,
-        format="[%(asctime)s] %(levelname)s: %(message)s",
+        level=logging.INFO,
+        format="[%(asctime)s] (%(name)s) %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler("output.log", mode="w", encoding="utf-8")
+        ]
     )
 
     args = create_argument_parser()
@@ -41,7 +45,7 @@ def update_markdown(args: Namespace) -> None:
     sync_options = S3Options(source=source, destination=destination,
                              include_pattern="*/*.md", exclude_pattern="*.md",
                              last_modified=last_modified,
-                             dryrun=check_dryrun(args.dryrun))
+                             dryrun=is_dryrun(args.dryrun))
 
     sync_with_s3(sync_options)
 
@@ -58,9 +62,9 @@ def update_html(args: Namespace) -> None:
     sync_options = S3Options(source=source, destination=destination,
                              exclude_pattern=".buildinfo.bak",
                              last_modified=last_modified,
-                             dryrun=check_dryrun(args.dryrun))
+                             dryrun=is_dryrun(args.dryrun))
 
-    if not check_dryrun(args.dryrun):
+    if not is_dryrun(args.dryrun):
         md_to_rst(os.environ['LOCAL_MD_DIR'],
                   os.environ['LOCAL_RST_DIR'])
         convert_rst_to_html()
@@ -80,7 +84,7 @@ def push_html_to_github() -> None:
         exit(1)
 
 
-def check_dryrun(dryrun: bool | None) -> bool:
+def is_dryrun(dryrun: bool | None) -> bool:
     if dryrun is None:
         return True
 
