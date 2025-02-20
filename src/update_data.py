@@ -14,8 +14,25 @@ import sys
 def main():
     load_dotenv()
 
+    args = create_argument_parser()
+
+    setup_logging(args.log)
+
+    if not args.html_only:
+        update_markdown(args)
+
+    if not args.markdown_only:
+        update_html(args)
+
+
+def setup_logging(log_level: str) -> None:
+    numeric_level = getattr(logging, log_level.upper(), None)
+
+    if not isinstance(numeric_level, int):
+        raise ValueError(f"Invalid log level: {log_level}")
+
     logging.basicConfig(
-        level=logging.INFO,
+        level=numeric_level,
         format="[%(asctime)s] (%(name)s) %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[
@@ -23,14 +40,6 @@ def main():
             logging.FileHandler("output.log", mode="w", encoding="utf-8")
         ]
     )
-
-    args = create_argument_parser()
-
-    if not args.html_only:
-        update_markdown(args)
-
-    if not args.markdown_only:
-        update_html(args)
 
 
 def update_markdown(args: Namespace) -> None:
@@ -108,6 +117,13 @@ def create_argument_parser() -> argparse.Namespace:
         "--html-only",
         help="only convert and sync html files from local to s3 bucket",
         action="store_true")
+
+    parser.add_argument(
+        "--log",
+        help="set log level (default: info)",
+        default="info",
+        choices=("debug", "info", "error")
+    )
 
     parser.add_argument(
         "--markdown-only",
