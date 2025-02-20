@@ -17,7 +17,8 @@ main () {
 
     check_git_status
 
-    git commit -am "$COMMIT_MSG"
+    git add .
+    git commit -m "$COMMIT_MSG"
     git push
 }
 
