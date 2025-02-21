@@ -82,8 +82,7 @@ def _get_remote_time(source: str, s3_client) -> float:
 
 def _upload_to_s3(sync_options: S3Options, s3_client) -> None:
 
-    files_to_sync: dict[str, str] = _get_file_list(
-        sync_options.source, sync_options.destination, s3_client)
+    files_to_sync: dict[str, str] = _get_file_list(sync_options, s3_client)
 
     if len(files_to_sync) == 0:
         print("All files are in sync")
@@ -91,36 +90,41 @@ def _upload_to_s3(sync_options: S3Options, s3_client) -> None:
 
     bucket: str = sync_options.destination.removeprefix("s3://")
 
-    for file, key in files_to_sync.items():
-        destination = sync_options.destination + '/' + key
+    for src, dst in files_to_sync.items():
+        dst = sync_options.destination + '/' + dst
         if sync_options.dryrun:
-            print(f"(upload: dryrun) {file} -> {destination}")
+            print(f"(upload: dryrun) {src} -> {dst}")
         else:
-            print(f"(upload) {file} -> {destination}")
-            s3_client.upload_file(file, bucket, key)
+            print(f"(upload) {src} -> {dst}")
+            # dst/key: name of key to upload to
+            s3_client.upload_file(src, bucket, dst)
 
 
 def _download_from_s3(sync_options: S3Options, s3_client) -> None:
 
-    files_to_sync: dict[str, str] = _get_file_list(
-        sync_options.destination, sync_options.source, s3_client)
+    files_to_sync: dict[str, str] = _get_file_list(sync_options, s3_client)
 
     if len(files_to_sync) == 0:
         print("All files are in sync")
         return
 
-    bucket: str = sync_options.destination.removeprefix("s3://")
+    bucket: str = sync_options.source.removeprefix("s3://")
 
-    for key, file in files_to_sync.items():
-        destination = sync_options.destination + '/' + key
+    for src, dst in files_to_sync.items():
         if sync_options.dryrun:
-            print(f"(download: dryrun) {destination} <- {file}")
+            print(f"(download: dryrun) {dst} <- {sync_options.source}/{src}")
         else:
-            print(f"(download) {destination} <- {file}")
-            s3_client.download_file(bucket, key, file)
+            print(f"(download) {dst} <- {src}")
+            print(f"(download) {dst} <- {sync_options.source}/{src}")
+            # src/key: name of key to download from
+            s3_client.download_file(bucket, src, dst)
 
 
-def _get_file_list(source: str, destination: str, s3_client) -> dict[str, str]:
+def _get_file_list(sync_options: S3Options, s3_client) -> dict[str, str]:
+
+    source = sync_options.source
+    destination = sync_options.destination
+    regex = sync_options.include_pattern
 
     local_files: dict[str, int]
     s3_files: dict[str, int]
@@ -129,17 +133,17 @@ def _get_file_list(source: str, destination: str, s3_client) -> dict[str, str]:
 
     if destination.startswith("s3://"):
         upload = True
-        local_files = _get_local_file_list(source)
+        local_files = _get_local_file_list(source, regex)
         s3_files = _get_s3_file_list(destination, s3_client)
     else:
-        local_files = _get_local_file_list(destination)
+        local_files = _get_local_file_list(destination, regex)
         s3_files = _get_s3_file_list(source, s3_client)
 
     files_to_sync: dict[str, str] = {}
 
     for file, size in local_files.items():
-        file_name = "/".join(file.rsplit("/", maxsplit=2)[1:])
-        if file_name in s3_files and size != s3_files[file_name]:
+        file_name = file.replace(f"{source}/", "")
+        if file_name not in s3_files or size != s3_files[file_name]:
             if upload:
                 files_to_sync[file] = file_name
             else:
@@ -148,11 +152,11 @@ def _get_file_list(source: str, destination: str, s3_client) -> dict[str, str]:
     return files_to_sync
 
 
-def _get_local_file_list(source: str) -> dict[str, int]:
+def _get_local_file_list(source: str, regex: str) -> dict[str, int]:
 
     file_list: dict[str, int] = {}
 
-    for file_path in Path(source).rglob("*"):
+    for file_path in Path(source).rglob(regex):
         if file_path.is_file():
             file_list[file_path.absolute().as_posix()
                       ] = file_path.stat().st_size
