@@ -91,11 +91,11 @@ def _upload_to_s3(sync_options: S3Options, s3_client) -> None:
     bucket: str = sync_options.destination.removeprefix("s3://")
 
     for src, dst in files_to_sync.items():
-        dst = sync_options.destination + '/' + dst
+        destination = sync_options.destination + '/' + dst
         if sync_options.dryrun:
-            print(f"(upload: dryrun) {src} -> {dst}")
+            print(f"(upload: dryrun) {src} -> {destination}")
         else:
-            print(f"(upload) {src} -> {dst}")
+            print(f"(upload) {src} -> {destination}")
             # dst/key: name of key to upload to
             s3_client.upload_file(src, bucket, dst)
 
@@ -129,15 +129,14 @@ def _get_file_list(sync_options: S3Options, s3_client) -> dict[str, str]:
     local_files: dict[str, int]
     s3_files: dict[str, int]
 
-    upload: bool = False
+    upload: bool = True
 
-    if destination.startswith("s3://"):
-        upload = True
-        local_files = _get_local_file_list(source, regex)
-        s3_files = _get_s3_file_list(destination, s3_client)
-    else:
-        local_files = _get_local_file_list(destination, regex)
-        s3_files = _get_s3_file_list(source, s3_client)
+    if source.startswith("s3://"):
+        upload = False
+        source, destination = destination, source
+
+    local_files = _get_local_file_list(source, regex)
+    s3_files = _get_s3_file_list(destination, s3_client)
 
     files_to_sync: dict[str, str] = {}
 
