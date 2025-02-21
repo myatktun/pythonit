@@ -1,4 +1,5 @@
 import boto3
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,12 +14,15 @@ class S3Options:
     dryrun: bool = True
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def sync_with_s3(sync_options: S3Options) -> None:
 
     s3_client = boto3.client("s3")
 
     if sync_options.last_modified:
-        print("Syncing files based on last modified time")
+        LOGGER.info("Syncing files based on last modified time")
         _choose_sync_dirs(sync_options, s3_client)
 
     if sync_options.destination.startswith("s3://"):
@@ -33,12 +37,12 @@ def _choose_sync_dirs(sync_options: S3Options, s3_client) -> None:
         sync_options.source, sync_options.destination, s3_client)
 
     if local_time < s3_time:
-        print("Syncing files from s3 bucket to local")
+        LOGGER.info("Syncing files from s3 bucket to local")
         original_source = sync_options.source
         sync_options.source = sync_options.destination
         sync_options.destination = original_source
     else:
-        print("Syncing files from local to s3 bucket")
+        LOGGER.info("Syncing files from local to s3 bucket")
 
 
 def _get_last_modified(source: str, destination: str,
@@ -85,7 +89,7 @@ def _upload_to_s3(sync_options: S3Options, s3_client) -> None:
     files_to_sync: dict[str, str] = _get_file_list(sync_options, s3_client)
 
     if len(files_to_sync) == 0:
-        print("All files are in sync")
+        LOGGER.info("All files are in sync")
         return
 
     bucket: str = sync_options.destination.removeprefix("s3://")
@@ -93,9 +97,9 @@ def _upload_to_s3(sync_options: S3Options, s3_client) -> None:
     for src, dst in files_to_sync.items():
         destination = sync_options.destination + '/' + dst
         if sync_options.dryrun:
-            print(f"(upload: dryrun) {src} -> {destination}")
+            LOGGER.info(f"(upload: dryrun) {src} -> {destination}")
         else:
-            print(f"(upload) {src} -> {destination}")
+            LOGGER.info(f"(upload) {src} -> {destination}")
             # dst/key: name of key to upload to
             s3_client.upload_file(src, bucket, dst)
 
@@ -105,17 +109,18 @@ def _download_from_s3(sync_options: S3Options, s3_client) -> None:
     files_to_sync: dict[str, str] = _get_file_list(sync_options, s3_client)
 
     if len(files_to_sync) == 0:
-        print("All files are in sync")
+        LOGGER.info("All files are in sync")
         return
 
     bucket: str = sync_options.source.removeprefix("s3://")
 
     for src, dst in files_to_sync.items():
         if sync_options.dryrun:
-            print(f"(download: dryrun) {dst} <- {sync_options.source}/{src}")
+            LOGGER.info(
+                f"(download: dryrun) {dst} <- {sync_options.source}/{src}")
         else:
-            print(f"(download) {dst} <- {src}")
-            print(f"(download) {dst} <- {sync_options.source}/{src}")
+            LOGGER.info(f"(download) {dst} <- {src}")
+            LOGGER.info(f"(download) {dst} <- {sync_options.source}/{src}")
             # src/key: name of key to download from
             s3_client.download_file(bucket, src, dst)
 
