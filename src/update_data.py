@@ -52,7 +52,7 @@ def update_markdown(args: Namespace) -> None:
         last_modified = False
 
     sync_options = S3Options(source=source, destination=destination,
-                             include_pattern="*/*.md", exclude_pattern="*.md",
+                             include_pattern="*/*.md",
                              last_modified=last_modified,
                              dryrun=is_dryrun(args.dryrun))
 
@@ -69,7 +69,7 @@ def update_html(args: Namespace) -> None:
         last_modified = False
 
     sync_options = S3Options(source=source, destination=destination,
-                             exclude_pattern=".buildinfo.bak",
+                             include_pattern="*.html",
                              last_modified=last_modified,
                              dryrun=is_dryrun(args.dryrun))
 
