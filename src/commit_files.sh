@@ -1,11 +1,11 @@
 #!/bin/bash
 
-source ./.env
+CWD="$(dirname $(readlink -f -- "$0"))"
+source "$CWD/.env"
 set -e
 
 
 main () {
-    rst_to_html
 
     COMMIT_MSG="$@"
 
@@ -13,6 +13,8 @@ main () {
         echo "Commit message not provided"
         exit 1
     fi
+
+    rst_to_html
 
     cp -r $LOCAL_HTML_DIR/* $GH_REPO
     cd $GH_REPO
