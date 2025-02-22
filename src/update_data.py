@@ -1,12 +1,13 @@
 from modules.sync_files import sync_with_s3, S3Options
-from modules.file_converter import md_to_rst, convert_rst_to_html
+from modules.file_converter import md_to_rst
 
 import argparse
 from argparse import Namespace
-import datetime
+from datetime import datetime
 from dotenv import load_dotenv
 import logging
 import os
+from pathlib import Path
 from subprocess import run as subprocess_run
 import sys
 
@@ -31,13 +32,24 @@ def setup_logging(log_level: str) -> None:
     if not isinstance(numeric_level, int):
         raise ValueError(f"Invalid log level: {log_level}")
 
+    root_dir = Path(__file__).parent.parent.absolute().as_posix()
+
+    log_dir = f"{root_dir}/logs"
+
+    Path(log_dir).mkdir(exist_ok=True)
+
+    def log_file_name() -> str:
+        log_file = datetime.now().strftime('output_%Y%m%d_%H%M%S.log')
+        return f"{log_dir}/{log_file}"
+
     logging.basicConfig(
         level=numeric_level,
         format="[%(asctime)s] (%(name)s) %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler("output.log", mode="w", encoding="utf-8")
+            logging.FileHandler(log_file_name(),
+                                mode="w", encoding="utf-8")
         ]
     )
 
@@ -74,16 +86,14 @@ def update_html(args: Namespace) -> None:
                              dryrun=is_dryrun(args.dryrun))
 
     if not is_dryrun(args.dryrun):
-        md_to_rst(os.environ['LOCAL_MD_DIR'],
-                  os.environ['LOCAL_RST_DIR'])
-        convert_rst_to_html()
-        push_html_to_github()
+        md_to_rst(os.environ['LOCAL_MD_DIR'], os.environ['LOCAL_RST_DIR'])
+        push_to_github()
 
     sync_with_s3(sync_options)
 
 
-def push_html_to_github() -> None:
-    commit_msg = datetime.datetime.now().strftime(
+def push_to_github() -> None:
+    commit_msg = datetime.now().strftime(
         "[%Y-%m-%d %H:%M:%S]: Update HTML files")
 
     exit_code = subprocess_run(["./commit_files.sh", commit_msg]).returncode
