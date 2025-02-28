@@ -40,6 +40,7 @@ Markdown files are written in the format below.
     - foo
     - **bar**
         >+ baz
+        >1\. qux
 
 ##### [back to top](#main-header)
 ```
@@ -65,6 +66,7 @@ Section Content
     * foo
     * **bar**
         - baz
+        #. qux
 
 `back to top <#main-header>`_
 ```
@@ -75,11 +77,12 @@ rst files are converted to html using [Sphinx](https://www.sphinx-doc.org/en/mas
 
 ## Environment Variables
 
+Only necessary to set to run [update_data.py](./src/update_data.py) script.
+
 To sync files with S3, set environment variables for `LOCAL_MD_DIR`, `S3_MD_BUCKET`,
 `LOCAL_HTML_DIR`, and `S3_HTML_BUCKET`.
 
-To convert markdown to rst, set environment variables for `LOCAL_MD_DIR`, `RST_DIR`,
-`MAKE_DIRECTORY`.
+To convert markdown to rst, set environment variables for `LOCAL_MD_DIR` and `LOCAL_RST_DIR`.
 
 To push HTML files to GitHub repository, set environment variables for `GH_REPO`.
 
@@ -114,7 +117,10 @@ aws amplify create-app --name <app-name> --region <region-id>
 Create a branch for the Amplify app.
 
 ```sh
-aws amplify create-branch --region <region-id> --app-id <app-id> --branch-name <branch-name>
+aws amplify create-branch \
+--region <region-id> \
+--app-id <app-id> \
+--branch-name <branch-name>
 ```
 
 Update the S3 bucket policy in S3 Console using the template below. Edit `<branch-name>`,
@@ -173,13 +179,20 @@ policy in json file, and use AWS CLI.
 ```
 
 ```sh
-aws s3api put-bucket-policy --bucket <bucket-name> --region <region-id> --policy file://<file-name>.json
+aws s3api put-bucket-policy \
+--bucket <bucket-name> \
+--region <region-id> \
+--policy file://<file-name>.json
 ```
 
 Start Amplify deployment. You can also create it first.
 
 ```sh
-aws amplify start-deployment --region <region-id> --app-id <app-id> --branch-name <branch-name> --source-url s3://<bucket-name>/<zip-file>
+aws amplify start-deployment \
+--region <region-id> \
+--app-id <app-id> \
+--branch-name <branch-name> \
+--source-url s3://<bucket-name>/<zip-file>
 ```
 
 Can delete the Amplify app if no longer want it anymore.
