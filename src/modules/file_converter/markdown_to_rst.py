@@ -197,18 +197,26 @@ def _generate_bullet_line(line) -> str:
     # change starting '-' to '*', '>+' to '-', and '>' to whitespace
     # add extra backticks if line contains word with backticks
     def replace(m: re.Match[str]):
-        if m.group(2):  # - or >+ or >
-            if m.group(2) == ">":
-                return f"{m.group(1)}  "
-            elif m.group(2) == ">+":
+        if m.group(2):  # - or >+ or >1\ or >
+            if m.group(2) == ">+":
                 return f"{m.group(1)}- "
+            elif re.match(r"\>\d\\", m.group(2)):
+                return f"{m.group(1)}#"
+            elif m.group(2) == ">":
+                if re.match(r"^\s*\>\n", line):
+                    return ""
+                if m.group(3) and len(m.group(3)) > 2:
+                    return f"{m.group(1)}   "
+
+                return f"{m.group(1)}  "
             return f"{m.group(1)}* "
         elif m.group(4):  # backticks
             return f"``{m.group(4)}``"
 
         return m.group(0)
 
-    line = re.sub(r"^(\s*)(-|\>\+|\>)\s*|(>\+)|`([^`]*)`", replace, line)
+    line = re.sub(
+        r"^(\s*)(-|\>\+|\>\d\\|\>)(\s*)|`([^`]*)`", replace, line)
 
     return line
 
