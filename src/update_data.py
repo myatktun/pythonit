@@ -96,7 +96,10 @@ def push_to_github() -> None:
     commit_msg = datetime.now().strftime(
         "[%Y-%m-%d %H:%M:%S]: Update HTML files")
 
-    exit_code = subprocess_run(["./commit_files.sh", commit_msg]).returncode
+    script_dir = Path(__file__).parent.absolute().as_posix()
+
+    exit_code = subprocess_run(
+        [f"{script_dir}/commit_files.sh", commit_msg]).returncode
 
     if exit_code:
         logging.error("Failed to push html files to github repository")
