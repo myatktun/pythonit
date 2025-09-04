@@ -1,10 +1,8 @@
-from dotenv import load_dotenv
 import logging
 import os
 from pathlib import Path
 import re
 
-load_dotenv()
 
 SECTION_HEADER_PREFIX = "## "
 
@@ -12,7 +10,7 @@ SECTION_HEADER_PREFIX = "## "
 def md_to_rst(source: str, destination: str) -> None:
     logger = logging.getLogger(__name__)
 
-    for file_path in Path(source).rglob("*"):
+    for file_path in Path(source).rglob("*.md"):
         if file_path.is_dir():
             continue
 
