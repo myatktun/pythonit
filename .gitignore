@@ -1,8 +1,10 @@
 *.json
-venv/
-__pycache__/
+*.log
 .env
 .python-version
+
+venv/
+__pycache__/
 rst/*
 !rst/source
 rst/source/*
