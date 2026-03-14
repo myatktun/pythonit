@@ -93,6 +93,7 @@ def update_html(args: Namespace) -> None:
 
 
 def push_to_github() -> None:
+    logging.info("Pushing files to GitHub repository")
     commit_msg = datetime.now().strftime(
         "[%Y-%m-%d %H:%M:%S]: Update HTML files")
 
@@ -102,7 +103,7 @@ def push_to_github() -> None:
         [f"{script_dir}/commit_files.sh", commit_msg]).returncode
 
     if exit_code:
-        logging.error("Failed to push html files to github repository")
+        logging.error("Failed to push html files to GitHub repository")
         exit(1)
 
 
